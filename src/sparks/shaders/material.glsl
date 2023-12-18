@@ -23,7 +23,7 @@ vec3 bsdf(Material material, vec3 in_direction, vec3 out_direction, vec3 normal_
       return vec3(0.0);
     }
     case MATERIAL_TYPE_PRINCIPLED: {
-      float kd = 0.2, ks = 1-kd;
+      float kd = 0.2, ks = 1 - kd;
       int n = 8;
       vec3 spe_out_direction = in_direction - dot(in_direction, normal_direction) * normal_direction * 2.0f;
       float cosine = max(dot(out_direction, spe_out_direction), 0.0f);
