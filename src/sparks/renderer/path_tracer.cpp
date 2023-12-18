@@ -19,7 +19,10 @@ glm::vec3 PathTracer::SampleRay(glm::vec3 origin,
   HitRecord hit_record;
   const int max_bounce = render_settings_->num_bounces;
   std::mt19937 rd(sample ^ x ^ y);
+  std::uniform_real_distribution<> dis(0.0, 1.0);
   for (int i = 0; i < max_bounce; i++) {
+    if (dis(rd)>0.9) break;
+    throughput/=0.9;
     auto t = scene_->TraceRay(origin, direction, 1e-3f, 1e4f, &hit_record);
     if (t > 0.0f) {
       auto &material =
@@ -27,20 +30,20 @@ glm::vec3 PathTracer::SampleRay(glm::vec3 origin,
       if (material.material_type == MATERIAL_TYPE_EMISSION) {
         radiance += throughput * material.emission * material.emission_strength;
         break;
-      } else {
-        throughput *=
-            material.albedo_color *
-            glm::vec3{scene_->GetTextures()[material.albedo_texture_id].Sample(
-                hit_record.tex_coord)};
+      }
+      else if (material.material_type == MATERIAL_TYPE_SPECULAR) {
+        direction -= 2.0f * dot(hit_record.normal, direction) * hit_record.normal;
         origin = hit_record.position;
-        direction = scene_->GetEnvmapLightDirection();
-        radiance += throughput * scene_->GetEnvmapMinorColor();
-        throughput *=
-            std::max(glm::dot(direction, hit_record.normal), 0.0f) * 2.0f;
-        if (scene_->TraceRay(origin, direction, 1e-3f, 1e4f, nullptr) < 0.0f) {
-          radiance += throughput * scene_->GetEnvmapMajorColor();
-        }
-        break;
+      }
+      else if (material.material_type == MATERIAL_TYPE_LAMBERTIAN) {
+        float a = dis(rd) * PI;
+        float b = dis(rd) * PI * 2;
+        glm::vec3 hh{sin(b) * cos(a), cos(b) * cos(a), sin(a)};
+        if (dot(hh, hit_record.normal) < 0.0f) hh *= -1;
+        throughput *= dot(hh, hit_record.normal) * material.albedo_color *
+          glm::vec3{scene_->GetTextures()[material.albedo_texture_id].Sample(hit_record.tex_coord)};
+        origin = hit_record.position;
+        direction = hh;
       }
     } else {
       radiance += throughput * glm::vec3{scene_->SampleEnvmap(direction)};

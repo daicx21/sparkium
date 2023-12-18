@@ -70,31 +70,64 @@ void TraceRay(vec3 origin, vec3 direction) {
 vec3 SampleRay(vec3 origin, vec3 direction) {
   vec3 radiance = vec3(0.0);
   vec3 throughput = vec3(1.0);
+
+  float RR_P = 0.9, area_emission = 130.0f * 105.0f;
+
   for (int b = 0; b < guo.num_bounces; b++) {
+    direction = normalize(direction);
     TraceRay(origin, direction);
 
     if (ray_payload.t == -1.0) {
       radiance += throughput * SampleEnvmap(direction);
       break;
-    } else {
-      Material material = materials[hit_record.hit_entity_id];
-      if (material.material_type == MATERIAL_TYPE_EMISSION) {
-        radiance += throughput * material.emission * material.emission_strength;
-        break;
-      } else {
-        throughput *= material.albedo_color *
-                      vec3(texture(texture_samplers[material.albedo_texture_id],
-                                   hit_record.tex_coord));
-        origin = hit_record.position;
-        direction = guo.envmap_light_direction;
-        radiance += throughput * guo.envmap_minor_color;
-        throughput *= max(dot(direction, hit_record.normal), 0.0) * 2.0;
-        TraceRay(origin, direction);
-        if (ray_payload.t < 0.0f) {
-          radiance += throughput * guo.envmap_major_color;
-        }
-        break;
+    }
+    Material material = materials[hit_record.hit_entity_id];
+    if (dot(hit_record.normal, direction) > 0.0f)
+      hit_record.normal *= -1.0f;
+    hit_record.normal = normalize(hit_record.normal);
+
+    vec3 hn = hit_record.normal, hp = hit_record.position;
+    vec2 ht = hit_record.tex_coord;
+
+    if (material.material_type == MATERIAL_TYPE_EMISSION) {
+      radiance += throughput * material.emission * material.emission_strength;
+      break;
+    }
+    else if (material.material_type == MATERIAL_TYPE_SPECULAR) {
+      if (RandomFloat() > RR_P) break;
+      throughput /= RR_P;
+      direction -= 2.0f * dot(hn, direction) * hn;
+      origin = hp;
+    }
+    else if (material.material_type == MATERIAL_TYPE_LAMBERTIAN) {
+      throughput *= (material.albedo_color / PI) * 
+                    vec3(texture(texture_samplers[material.albedo_texture_id], ht));
+
+      vec3 hhh = vec3(RandomFloat() * 130.0f + 213.0f, 548.7f, RandomFloat() * 105.0f + 227.0f);
+      vec3 dir = normalize(hhh - hp);
+      TraceRay(hp, dir);
+      if (!(dot(dir, hn) <= 0.0f || ray_payload.t < 10.0f ||
+          materials[hit_record.hit_entity_id].material_type != MATERIAL_TYPE_EMISSION))
+      {
+        if (dot(hit_record.normal, dir) > 0.0f) hit_record.normal *= -1.0f;
+        radiance += throughput * materials[hit_record.hit_entity_id].emission * materials[hit_record.hit_entity_id].emission_strength *
+                    dot(dir, hn) * (-dot(hit_record.normal, dir)) /
+                    dot(hhh - hp, hhh - hp) * area_emission;
       }
+
+      if (RandomFloat() > RR_P) break;
+      throughput /= RR_P;
+
+      float a = acos(sqrt(1 - RandomFloat()));
+      float b = RandomFloat() * PI * 2;
+      dir = vec3(sin(b) * cos(a), cos(b) * cos(a), sin(a));
+      if (dot(dir, hn) < 0.0f) dir *= -1;
+      TraceRay(hp, dir);
+      if (ray_payload.t != -1.0f &&
+          materials[hit_record.hit_entity_id].material_type == MATERIAL_TYPE_EMISSION) break;
+      throughput *= dot(dir, hn) * (PI * 2);
+      origin = hp;
+      direction = dir;
     }
   }
   return radiance;
