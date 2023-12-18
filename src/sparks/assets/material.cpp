@@ -46,8 +46,12 @@ Material::Material(Scene *scene, const tinyxml2::XMLElement *material_element)
 
   child_element = material_element->FirstChildElement("emission_strength");
   if (child_element) {
-    emission_strength =
-        std::stof(child_element->FindAttribute("value")->Value());
+    emission_strength = std::stof(child_element->FindAttribute("value")->Value());
+  }
+
+  child_element = material_element->FirstChildElement("refraction_ratio");
+  if (child_element) {
+    refraction_ratio = std::stof(child_element->FindAttribute("value")->Value());
   }
 
   child_element = material_element->FirstChildElement("alpha");

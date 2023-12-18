@@ -67,13 +67,29 @@ void TraceRay(vec3 origin, vec3 direction) {
   hit_record = GetHitRecord(ray_payload, origin, direction);
 }
 
+mat3 GenerateRotation(vec3 normal) {
+  vec3 hx;
+  if (abs(normal.x) <= abs(normal.y) && abs(normal.x) <= abs(normal.z)) {
+    hx = vec3(0.0f, -normal.z, normal.y);
+  }
+  else if (abs(normal.y) <= abs(normal.z) && abs(normal.y) <= abs(normal.x)) {
+    hx = vec3(normal.z, 0.0f, -normal.x);
+  }
+  else {
+    hx = vec3(-normal.y, normal.x, 0.0f);
+  }
+  hx = normalize(hx);
+  vec3 hy = cross(normal, hx);
+  return mat3(hx, hy, normal);
+}
+
 vec3 SampleRay(vec3 origin, vec3 direction) {
   vec3 radiance = vec3(0.0);
   vec3 throughput = vec3(1.0);
 
   float RR_P = 0.9, area_emission = 130.0f * 105.0f;
 
-  for (int b = 0; b < guo.num_bounces; b++) {
+  for (int b = 0;; b++) {
     direction = normalize(direction);
     TraceRay(origin, direction);
 
@@ -106,7 +122,7 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       vec3 hhh = vec3(RandomFloat() * 130.0f + 213.0f, 548.7f, RandomFloat() * 105.0f + 227.0f);
       vec3 dir = normalize(hhh - hp);
       TraceRay(hp, dir);
-      if (!(dot(dir, hn) <= 0.0f || ray_payload.t < 10.0f ||
+      if (!(dot(dir, hn) <= 0.0f || ray_payload.t < 1.0f ||
           materials[hit_record.hit_entity_id].material_type != MATERIAL_TYPE_EMISSION))
       {
         if (dot(hit_record.normal, dir) > 0.0f) hit_record.normal *= -1.0f;
@@ -118,16 +134,43 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       if (RandomFloat() > RR_P) break;
       throughput /= RR_P;
 
-      float a = acos(sqrt(1 - RandomFloat()));
+      float a = sqrt(RandomFloat());
       float b = RandomFloat() * PI * 2;
-      dir = vec3(sin(b) * cos(a), cos(b) * cos(a), sin(a));
+      mat3 rotation = GenerateRotation(hn);
+      dir = rotation * vec3(a * cos(b), a * sin(b), sqrt(1.0f - a * a));
       if (dot(dir, hn) < 0.0f) dir *= -1;
       TraceRay(hp, dir);
       if (ray_payload.t != -1.0f &&
           materials[hit_record.hit_entity_id].material_type == MATERIAL_TYPE_EMISSION) break;
-      throughput *= dot(dir, hn) * (PI * 2);
+      throughput *= dot(dir, hn) / sqrt(1.0f - a * a) * PI;
       origin = hp;
       direction = dir;
+    }
+    else if (material.material_type == MATERIAL_TYPE_TRANSMISSIVE) {
+
+      float eta = material.refraction_ratio;
+      float cos_t = dot(hn, direction), sin_t = sqrt(1.0f - cos_t * cos_t);
+
+      vec3 dx = normalize(direction - dot(direction, hn) * hn), dy = hn;
+
+      if (cos_t < 0.0f) dy = - dy, cos_t = -cos_t;
+      else eta = 1.0f / eta;
+
+      float sin_p = sin_t / eta, cos_p, fresnel;
+
+      if (sin_p > 1) fresnel = 1.0f;
+      else
+      {
+        cos_p = sqrt(1.0f - sin_p * sin_p);
+        fresnel = (pow(((cos_t - eta * cos_p) / (cos_t + eta * cos_p)), 2.0f) +
+                  pow(((cos_p - eta * cos_t) / (cos_p + eta * cos_t)), 2.0f)) / 2.0f;
+      }
+
+      origin = hp;
+
+      if (fract(RandomFloat()) > fresnel) direction = cos_p * dy + sin_p * dx;
+      else direction = direction - dot(direction, hn) * hn * 2.0f;
+
     }
   }
   return radiance;
