@@ -40,7 +40,6 @@ layout(location = 0) rayPayloadEXT RayPayload ray_payload;
 // clang-format off
 #include "vertex.glsl"
 #include "hit_record.glsl"
-#include "random.glsl"
 // clang-format on
 
 vec3 SampleEnvmap(vec3 direction) {
@@ -68,22 +67,6 @@ void TraceRay(vec3 origin, vec3 direction) {
   traceRayEXT(scene, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, origin, tmin,
               direction, tmax, 0);
   hit_record = GetHitRecord(ray_payload, origin, direction);
-}
-
-mat3 GenerateRotation(vec3 normal) {
-  vec3 hx;
-  if (abs(normal.x) <= abs(normal.y) && abs(normal.x) <= abs(normal.z)) {
-    hx = vec3(0.0f, -normal.z, normal.y);
-  }
-  else if (abs(normal.y) <= abs(normal.z) && abs(normal.y) <= abs(normal.x)) {
-    hx = vec3(normal.z, 0.0f, -normal.x);
-  }
-  else {
-    hx = vec3(-normal.y, normal.x, 0.0f);
-  }
-  hx = normalize(hx);
-  vec3 hy = cross(normal, hx);
-  return mat3(hx, hy, normal);
 }
 
 vec3 SampleRay(vec3 origin, vec3 direction) {
@@ -138,7 +121,7 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       {
         if (dot(hit_record.normal, dir) > 0.0f) hit_record.normal *= -1.0f;
         hit_record.normal = normalize(hit_record.normal);
-        float pdf1 = dot(hhh - hp, hhh - hp) / cosine / area_emission, pdf2 = cosine * INV_PI;
+        float pdf1 = dot(hhh - hp, hhh - hp) / cosine / area_emission, pdf2 = pdf(material, direction, dir, hn);
         if (pdf1 != 0.0f || pdf2 != 0.0f)
           radiance += throughput * materials[hit_record.hit_entity_id].emission * materials[hit_record.hit_entity_id].emission_strength *
                       bsdf(material, direction, dir, hn) * pdf1 * pdf1 / (pdf1 * pdf1 + pdf2 * pdf2) *
@@ -171,7 +154,25 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       if (fract(RandomFloat()) > fresnel) direction = cos_p * dy + sin_p * dx;
       else direction = direction - dot(direction, hn) * hn * 2.0f;
     }
+    else if (material.material_type == MATERIAL_TYPE_BECKMANN) {
+      //Beckmann importance sampling
+      mat3 rotation = GenerateRotation(hn);
+      vec3 wh = SampleWh(material, rotation, direction);
+      vec3 dir = reflect(direction, wh);
+      if (dot(dir, hn) < 0.0f) dir *= -1;
+      TraceRay(hp, dir);
+      if (dot(hit_record.normal, dir) > 0.0f) hit_record.normal *= -1.0f;
+      hit_record.normal = normalize(hit_record.normal);
+      float cosine = -dot(hit_record.normal, dir);
+      float cur_pdf = pdf(material, direction, dir, hn);
+      throughput *= bsdf(material, direction, dir, hn) / cur_pdf * dot(dir, hn);
+      if (cosine > 0.0f && ray_payload.t != -1.0f && materials[hit_record.hit_entity_id].material_type == MATERIAL_TYPE_EMISSION) {
+        float pdf1 = ray_payload.t * ray_payload.t / cosine / area_emission, pdf2 = cur_pdf;
+        throughput *=  pdf2 * pdf2 / (pdf1 * pdf1 + pdf2 * pdf2);
+      }
+    }
     else {
+      //cosine-weighted importance sampling
       float a = sqrt(RandomFloat());
       float b = RandomFloat() * PI * 2;
       mat3 rotation = GenerateRotation(hn);
@@ -183,7 +184,7 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       float cosine = -dot(hit_record.normal, dir);
       throughput *= bsdf(material, direction, dir, hn) * PI;
       if (cosine > 0.0f && ray_payload.t != -1.0f && materials[hit_record.hit_entity_id].material_type == MATERIAL_TYPE_EMISSION) {
-        float pdf1 = ray_payload.t * ray_payload.t / cosine / area_emission, pdf2 = cosine * INV_PI;
+        float pdf1 = ray_payload.t * ray_payload.t / cosine / area_emission, pdf2 = pdf(material, direction, dir, hn);
         throughput *=  pdf2 * pdf2 / (pdf1 * pdf1 + pdf2 * pdf2);
       }
       origin = hp;

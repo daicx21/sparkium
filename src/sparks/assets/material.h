@@ -22,6 +22,7 @@ struct Material {
   float emission_strength{1.0f};
   float refraction_ratio{1.0f};
   float alpha{1.0f};
+  float beta{1.0f};
   MaterialType material_type{MATERIAL_TYPE_LAMBERTIAN};
   float reserve[1]{};
   Material() = default;
