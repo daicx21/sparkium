@@ -94,7 +94,7 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
 
   int tot = lightsources[0];
 
-  for (int b = 0;; b++) {
+  for (int b = 0; b < 16; b++) {
     direction = normalize(direction);
     TraceRay(origin, direction);
     if (ray_payload.t == -1.0) {
@@ -102,8 +102,7 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       break;
     }
     Material material = materials[hit_record.hit_entity_id];
-    if (dot(hit_record.normal, direction) > 0.0f)
-      hit_record.normal *= -1.0f;
+    if (dot(hit_record.normal, direction) > 0.0f) hit_record.normal *= -1.0f;
     hit_record.normal = normalize(hit_record.normal);
     vec3 hn = hit_record.normal, hp = hit_record.position;
     vec2 ht = hit_record.tex_coord;
@@ -130,7 +129,7 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       h3 = 1.0f - h1 - h2;
         
       vec3 hhh = h1 * p1.position + h2 * p2.position + h3 * p3.position, dir = normalize(hhh - hp);
-      area_emission = length(cross(p2.position - p1.position, p3.position - p1.position));
+      area_emission = length(cross(p2.position - p1.position, p3.position - p1.position)) * 0.5f * tot * cnt;
       float cosine = dot(dir, hn);
       
       TraceRay(hp, dir);
@@ -138,10 +137,12 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
           materials[hit_record.hit_entity_id].material_type != MATERIAL_TYPE_EMISSION))
       {
         if (dot(hit_record.normal, dir) > 0.0f) hit_record.normal *= -1.0f;
+        hit_record.normal = normalize(hit_record.normal);
         float pdf1 = dot(hhh - hp, hhh - hp) / cosine / area_emission, pdf2 = cosine * INV_PI;
-        radiance += throughput * materials[hit_record.hit_entity_id].emission * materials[hit_record.hit_entity_id].emission_strength *
-                    bsdf(material, direction, dir, hn) * pdf1 * pdf1 / (pdf1 * pdf1 + pdf2 * pdf2) *
-                    cosine * (-dot(hit_record.normal, dir)) / dot(hhh - hp, hhh - hp) * area_emission;
+        if (pdf1 != 0.0f || pdf2 != 0.0f)
+          radiance += throughput * materials[hit_record.hit_entity_id].emission * materials[hit_record.hit_entity_id].emission_strength *
+                      bsdf(material, direction, dir, hn) * pdf1 * pdf1 / (pdf1 * pdf1 + pdf2 * pdf2) *
+                      cosine * (-dot(hit_record.normal, dir)) / dot(hhh - hp, hhh - hp) * area_emission;
       }
     }
 
@@ -177,12 +178,12 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       vec3 dir = rotation * vec3(a * cos(b), a * sin(b), sqrt(1.0f - a * a));
       if (dot(dir, hn) < 0.0f) dir *= -1;
       TraceRay(hp, dir);
+      if (dot(hit_record.normal, dir) > 0.0f) hit_record.normal *= -1.0f;
       hit_record.normal = normalize(hit_record.normal);
-      float cosine = dot(hit_record.normal, dir);
-      if (cosine < 0) cosine = -cosine;
+      float cosine = -dot(hit_record.normal, dir);
       throughput *= bsdf(material, direction, dir, hn) * PI;
-      if (ray_payload.t != -1.0f && materials[hit_record.hit_entity_id].material_type == MATERIAL_TYPE_EMISSION) {
-        float pdf1 = dot(hit_record.position - hp, hit_record.position - hp) / cosine / area_emission, pdf2 = cosine * INV_PI;
+      if (cosine > 0.0f && ray_payload.t != -1.0f && materials[hit_record.hit_entity_id].material_type == MATERIAL_TYPE_EMISSION) {
+        float pdf1 = ray_payload.t * ray_payload.t / cosine / area_emission, pdf2 = cosine * INV_PI;
         throughput *=  pdf2 * pdf2 / (pdf1 * pdf1 + pdf2 * pdf2);
       }
       origin = hp;
