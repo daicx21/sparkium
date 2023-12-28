@@ -10,7 +10,8 @@ enum MaterialType : int {
   MATERIAL_TYPE_SPECULAR = 1,
   MATERIAL_TYPE_TRANSMISSIVE = 2,
   MATERIAL_TYPE_PRINCIPLED = 3,
-  MATERIAL_TYPE_EMISSION = 4
+  MATERIAL_TYPE_BECKMANN = 4,
+  MATERIAL_TYPE_EMISSION = 5
 };
 
 class Scene;
@@ -24,7 +25,7 @@ struct Material {
   float alpha{1.0f};
   float beta{1.0f};
   MaterialType material_type{MATERIAL_TYPE_LAMBERTIAN};
-  float reserve[1]{};
+  //float reserve[1]{};
   Material() = default;
   explicit Material(const glm::vec3 &albedo);
   Material(Scene *scene, const tinyxml2::XMLElement *material_element);

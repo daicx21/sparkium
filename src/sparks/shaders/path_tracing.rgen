@@ -158,8 +158,11 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       //Beckmann importance sampling
       mat3 rotation = GenerateRotation(hn);
       vec3 wh = SampleWh(material, rotation, direction);
-      vec3 dir = reflect(direction, wh);
-      if (dot(dir, hn) < 0.0f) dir *= -1;
+      vec3 dir = direction - 2.0f * dot(wh, direction) * wh;
+      if (dot(dir, hn) < 0.0f) {
+        radiance += throughput * material.emission * material.emission_strength;
+        break;
+      }
       TraceRay(hp, dir);
       if (dot(hit_record.normal, dir) > 0.0f) hit_record.normal *= -1.0f;
       hit_record.normal = normalize(hit_record.normal);
@@ -170,6 +173,8 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
         float pdf1 = ray_payload.t * ray_payload.t / cosine / area_emission, pdf2 = cur_pdf;
         throughput *=  pdf2 * pdf2 / (pdf1 * pdf1 + pdf2 * pdf2);
       }
+      origin = hp;
+      direction = dir;
     }
     else {
       //cosine-weighted importance sampling

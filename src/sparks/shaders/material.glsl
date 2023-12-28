@@ -37,7 +37,7 @@ float Fresnel(Material material, vec3 in_direction, vec3 normal_direction) {
 
 float BeckmannLambda(Material material, vec3 direction, vec3 normal) {
   float cosTheta = dot(direction, normal);
-  float tanTheta = abs(max(0.0f, 1.0f - cosTheta * cosTheta) / cosTheta);
+  float tanTheta = abs(sqrt(max(0.0f, 1.0f - cosTheta * cosTheta)) / cosTheta);
   float a = 1.0f / (material.alpha * tanTheta);
   if (a >= 1.6f) return 0;
   else return (1.0f - 1.259f * a + 0.396f * a * a) / (3.535f * a + 2.181f * a * a);
@@ -70,14 +70,16 @@ bool SameHemiSphere(vec3 in_direction, vec3 out_direction, vec3 normal_direction
 vec3 SampleWh(Material material, mat3 rotation, vec3 in_direction) {
   if (material.alpha == material.beta) {
     float phi = 2 * PI * RandomFloat();
-    float tanTheta2 = -material.alpha * material.alpha * log(RandomFloat());
+    float logFloat = log(RandomFloat());
+    if (isinf(logFloat)) logFloat = 0;
+    float tanTheta2 = -material.alpha * material.alpha * logFloat;
     float cosTheta = 1.0f / sqrt(1.0f + tanTheta2), sinTheta = sqrt(max(0.0f, 1.0f - cosTheta * cosTheta));
     vec3 wh = rotation * vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
     if (!SameHemiSphere(in_direction, wh, rotation[2])) wh *= -1;
     return wh;
   }
   else {
-    float u = RandomFloat();
+    /*float u = RandomFloat();
     float phi = atan(material.beta / material.alpha * tan(2 * PI * u + 0.5f * PI));
     if (u > 0.5f) phi += PI;
     u = log(RandomFloat());
@@ -86,7 +88,7 @@ vec3 SampleWh(Material material, mat3 rotation, vec3 in_direction) {
     float cosTheta = 1.0f / sqrt(1.0f + tanTheta2), sinTheta = sqrt(max(0.0f, 1.0f - cosTheta * cosTheta));
     vec3 wh = rotation * vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
     if (!SameHemiSphere(in_direction, wh, rotation[2])) wh *= -1;
-    return wh;
+    return wh;*/
   }
 }
 
@@ -102,7 +104,7 @@ float pdf(Material material, vec3 in_direction, vec3 out_direction, vec3 normal_
       }
       else {
       }
-      return D / cosTheta;
+      return D * cosTheta / (4.0f * dot(-in_direction, wh));
     }
     default: {
       return dot(out_direction, normal_direction) * INV_PI;
@@ -136,7 +138,7 @@ vec3 bsdf(Material material, vec3 in_direction, vec3 out_direction, vec3 normal_
       }
       return material.albedo_color * D * Fresnel(material, in_direction, wh) 
         / (1.0f + BeckmannLambda(material, in_direction, wh) + BeckmannLambda(material, out_direction, wh))
-        / 4.0f / dot(-in_direction, normal_direction) / dot(out_direction, normal_direction);
+        / (4.0f * dot(-in_direction, normal_direction) * dot(out_direction, normal_direction));
     }
     default: {
       return vec3(0.5);

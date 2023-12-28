@@ -13,6 +13,7 @@ std::unordered_map<std::string, MaterialType> material_name_map{
     {"specular", MATERIAL_TYPE_SPECULAR},
     {"transmissive", MATERIAL_TYPE_TRANSMISSIVE},
     {"principled", MATERIAL_TYPE_PRINCIPLED},
+    {"beckmann", MATERIAL_TYPE_BECKMANN},
     {"emission", MATERIAL_TYPE_EMISSION}};
 }
 
