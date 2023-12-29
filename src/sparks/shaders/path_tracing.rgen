@@ -77,7 +77,7 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
 
   int tot = lightsources[0];
 
-  for (int b = 0; b < 16; b++) {
+  for (int b = 0; b < guo.num_bounces; b++) {
     direction = normalize(direction);
     TraceRay(origin, direction);
     if (ray_payload.t == -1.0) {
@@ -160,7 +160,6 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       vec3 wh = SampleWh(material, rotation, direction);
       vec3 dir = direction - 2.0f * dot(wh, direction) * wh;
       if (dot(dir, hn) < 0.0f) {
-        radiance += throughput * material.emission * material.emission_strength;
         break;
       }
       TraceRay(hp, dir);
@@ -169,6 +168,7 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       float cosine = -dot(hit_record.normal, dir);
       float cur_pdf = pdf(material, direction, dir, hn);
       throughput *= bsdf(material, direction, dir, hn) / cur_pdf * dot(dir, hn);
+      throughput *= vec3(texture(texture_samplers[material.albedo_texture_id], ht));
       if (cosine > 0.0f && ray_payload.t != -1.0f && materials[hit_record.hit_entity_id].material_type == MATERIAL_TYPE_EMISSION) {
         float pdf1 = ray_payload.t * ray_payload.t / cosine / area_emission, pdf2 = cur_pdf;
         throughput *=  pdf2 * pdf2 / (pdf1 * pdf1 + pdf2 * pdf2);
@@ -188,6 +188,7 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       hit_record.normal = normalize(hit_record.normal);
       float cosine = -dot(hit_record.normal, dir);
       throughput *= bsdf(material, direction, dir, hn) * PI;
+      throughput *= vec3(texture(texture_samplers[material.albedo_texture_id], ht));
       if (cosine > 0.0f && ray_payload.t != -1.0f && materials[hit_record.hit_entity_id].material_type == MATERIAL_TYPE_EMISSION) {
         float pdf1 = ray_payload.t * ray_payload.t / cosine / area_emission, pdf2 = pdf(material, direction, dir, hn);
         throughput *=  pdf2 * pdf2 / (pdf1 * pdf1 + pdf2 * pdf2);
