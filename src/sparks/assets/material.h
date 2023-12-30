@@ -37,7 +37,8 @@ struct Material {
   float clearcoat{0.5f};
   float clearcoat_gloss{0.5f};
   float eta{1.5f};
-  //float reserve[0]{};
+  int normal_texture_id{-1};
+  float reserve[3]{};
   Material() = default;
   explicit Material(const glm::vec3 &albedo);
   Material(Scene *scene, const tinyxml2::XMLElement *material_element);

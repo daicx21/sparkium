@@ -49,6 +49,15 @@ HitRecord GetHitRecord(RayPayload ray_payload, vec3 origin, vec3 direction) {
                          ray_payload.barycentric;
 
   Material mat = materials[hit_record.hit_entity_id];
+
+  if (mat.normal_texture_id >= 0) {
+    hit_record.normal = normalize(mat3(hit_record.normal, hit_record.tangent,
+        cross(hit_record.normal, hit_record.tangent)) *
+        (2.0f * vec3(texture(texture_samplers[mat.normal_texture_id], hit_record.tex_coord)) - vec3(1.0f)));
+    hit_record.tangent = normalize(hit_record.tangent
+      - dot(hit_record.tangent, hit_record.normal) * hit_record.normal);
+  }
+
   hit_record.base_color =
       mat.albedo_color *
       texture(texture_samplers[mat.albedo_texture_id], hit_record.tex_coord)

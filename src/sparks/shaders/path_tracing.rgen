@@ -158,7 +158,6 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
     }
     else {
       vec3 dir = sample_bsdf(direction);
-      if (dot(dir, hgn) <= 0.0f) break;
       TraceRay(hp, dir);
       if (dot(hit_record.normal, dir) > 0.0f) hit_record.normal *= -1.0f;
       hit_record.normal = normalize(hit_record.normal);

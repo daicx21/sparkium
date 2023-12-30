@@ -22,6 +22,7 @@ struct Material {
   float clearcoat;
   float clearcoat_gloss;
   float eta;
+  int normal_texture_id;
 };
 
 #define MATERIAL_TYPE_LAMBERTIAN 0
@@ -126,7 +127,7 @@ vec3 sample_disney(vec3 in_direction) {
   //return sample_diffuse();
   float alpha_g = (1.0 - mat.clearcoat_gloss) * 0.1 + mat.clearcoat_gloss * 0.001;
   float u_0 = RandomFloat(), u_1 = RandomFloat();
-  float phi = acos(0.95);
+  float phi = acos(sqrt((1.0 - pow(sqr(alpha_g), 1.0 - u_0)) / (1.0 - sqr(alpha_g))));
   float theta = acos(2.0 * PI * u_1);
   h = to_world(vec3(sin(phi) * cos(theta), sin(phi) * sin(theta), cos(phi)));
   vec3 res = normalize(2.0 * dot(h, win) * h - win);
