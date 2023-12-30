@@ -19,13 +19,14 @@ class Scene;
 struct Material {
   glm::vec3 albedo_color{0.8f};
   int albedo_texture_id{0};
+  int normal_texture_id{-1};
   glm::vec3 emission{0.0f};
   float emission_strength{1.0f};
   float refraction_ratio{1.0f};
   float alpha{1.0f};
   float beta{1.0f};
   MaterialType material_type{MATERIAL_TYPE_LAMBERTIAN};
-  //float reserve[1]{};
+  float reserve[3]{};
   Material() = default;
   explicit Material(const glm::vec3 &albedo);
   Material(Scene *scene, const tinyxml2::XMLElement *material_element);
