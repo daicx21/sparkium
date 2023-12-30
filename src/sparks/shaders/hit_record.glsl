@@ -43,6 +43,8 @@ HitRecord GetHitRecord(RayPayload ray_payload, vec3 origin, vec3 direction) {
   hit_record.tangent =
       normalize(object_to_world * mat3(v0.tangent, v1.tangent, v2.tangent) *
                 ray_payload.barycentric);
+  hit_record.tangent = normalize(hit_record.tangent
+      - dot(hit_record.tangent, hit_record.normal) * hit_record.normal);
   hit_record.tex_coord = mat3x2(v0.tex_coord, v1.tex_coord, v2.tex_coord) *
                          ray_payload.barycentric;
 
