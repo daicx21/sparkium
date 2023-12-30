@@ -5,7 +5,7 @@ namespace sparks {
 struct Vertex {
   glm::vec3 position{};
   glm::vec3 normal{0.0f, 0.0f, 1.0f};
-  glm::vec3 tangent{1.0f, 0.0f, 0.0f};
+  glm::vec3 tangent{0.0f, 0.0f, 0.0f};
   glm::vec2 tex_coord{};
 
   Vertex() = default;
