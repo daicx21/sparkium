@@ -112,7 +112,9 @@ mat3 GenerateRotation() {
 
 void pre_gao(Material material, vec3 N, vec3 NG, vec3 TG1) {
   mat = material; n = N; ng = NG;
-  tg1 = TG1; tg2 = cross(n, tg1);
+  tg1 = cross(n, vec3(1.0, 0.0, 0.0));
+  if (dot(tg1, tg1) == 0) tg1 = cross(n, vec3(0.0, 1.0, 0.0));
+  tg1 = normalize(tg1); tg2 = cross(n, tg1);
 }
 
 vec3 sample_diffuse() {
@@ -127,10 +129,11 @@ vec3 sample_disney(vec3 in_direction) {
   //return sample_diffuse();
   float alpha_g = (1.0 - mat.clearcoat_gloss) * 0.1 + mat.clearcoat_gloss * 0.001;
   float u_0 = RandomFloat(), u_1 = RandomFloat();
-  float phi = acos(sqrt((1.0 - pow(sqr(alpha_g), 1.0 - u_0)) / (1.0 - sqr(alpha_g))));
+  float phi = acos(0.98);
   float theta = acos(2.0 * PI * u_1);
   h = to_world(vec3(sin(phi) * cos(theta), sin(phi) * sin(theta), cos(phi)));
   vec3 res = normalize(2.0 * dot(h, win) * h - win);
+  if (dot(res, n) <= 0.0) res = normalize(2.0 * dot(n, win) * n - win);
   return res;
 }
 
