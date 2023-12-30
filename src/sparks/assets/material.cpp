@@ -65,6 +65,66 @@ Material::Material(Scene *scene, const tinyxml2::XMLElement *material_element)
     beta = std::stof(child_element->FindAttribute("value")->Value());
   }
 
+  child_element = material_element->FirstChildElement("specular_transmission");
+  if (child_element) {
+    beta = std::stof(child_element->FindAttribute("value")->Value());
+  }
+
+  child_element = material_element->FirstChildElement("metallic");
+  if (child_element) {
+    beta = std::stof(child_element->FindAttribute("value")->Value());
+  }
+
+  child_element = material_element->FirstChildElement("subsurface");
+  if (child_element) {
+    beta = std::stof(child_element->FindAttribute("value")->Value());
+  }
+
+  child_element = material_element->FirstChildElement("specular");
+  if (child_element) {
+    beta = std::stof(child_element->FindAttribute("value")->Value());
+  }
+
+  child_element = material_element->FirstChildElement("roughgness");
+  if (child_element) {
+    beta = std::stof(child_element->FindAttribute("value")->Value());
+  }
+
+  child_element = material_element->FirstChildElement("specular_tint");
+  if (child_element) {
+    beta = std::stof(child_element->FindAttribute("value")->Value());
+  }
+
+  child_element = material_element->FirstChildElement("anisotrophic");
+  if (child_element) {
+    beta = std::stof(child_element->FindAttribute("value")->Value());
+  }
+
+  child_element = material_element->FirstChildElement("sheen");
+  if (child_element) {
+    beta = std::stof(child_element->FindAttribute("value")->Value());
+  }
+
+  child_element = material_element->FirstChildElement("sheen_tint");
+  if (child_element) {
+    beta = std::stof(child_element->FindAttribute("value")->Value());
+  }
+
+  child_element = material_element->FirstChildElement("clearcoat");
+  if (child_element) {
+    beta = std::stof(child_element->FindAttribute("value")->Value());
+  }
+
+  child_element = material_element->FirstChildElement("clearcoat_gloss");
+  if (child_element) {
+    beta = std::stof(child_element->FindAttribute("value")->Value());
+  }
+
+  child_element = material_element->FirstChildElement("eta");
+  if (child_element) {
+    beta = std::stof(child_element->FindAttribute("value")->Value());
+  }
+
   material_type =
       material_name_map[material_element->FindAttribute("type")->Value()];
 }

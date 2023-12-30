@@ -54,6 +54,7 @@ vec3 SampleEnvmap(vec3 direction) {
 }
 
 HitRecord hit_record;
+
 void TraceRay(vec3 origin, vec3 direction) {
   float tmin = 1e-3;
   float tmax = 1e4;
@@ -64,8 +65,7 @@ void TraceRay(vec3 origin, vec3 direction) {
   ray_payload.primitive_id = 0;
   ray_payload.object_to_world = mat4x3(1.0);
 
-  traceRayEXT(scene, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, origin, tmin,
-              direction, tmax, 0);
+  traceRayEXT(scene, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, origin, tmin, direction, tmax, 0);
   hit_record = GetHitRecord(ray_payload, origin, direction);
 }
 
@@ -85,9 +85,9 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       break;
     }
     Material material = materials[hit_record.hit_entity_id];
-    if (dot(hit_record.normal, direction) > 0.0f) hit_record.normal *= -1.0f;
-    hit_record.normal = normalize(hit_record.normal);
-    vec3 hn = hit_record.normal, hp = hit_record.position;
+    material.albedo_color = hit_record.base_color;
+
+    vec3 hn = hit_record.normal, hg = hit_record.geometry_normal, hp = hit_record.position;
     vec2 ht = hit_record.tex_coord;
 
     if (material.material_type == MATERIAL_TYPE_EMISSION) {
@@ -116,8 +116,7 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       float cosine = dot(dir, hn);
       
       TraceRay(hp, dir);
-      if (!(cosine <= 0.0f || ray_payload.t < 10.0f ||
-          materials[hit_record.hit_entity_id].material_type != MATERIAL_TYPE_EMISSION))
+      if (!(cosine <= 0.0f || ray_payload.t < 10.0f || materials[hit_record.hit_entity_id].material_type != MATERIAL_TYPE_EMISSION))
       {
         if (dot(hit_record.normal, dir) > 0.0f) hit_record.normal *= -1.0f;
         hit_record.normal = normalize(hit_record.normal);
@@ -125,7 +124,7 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
         if (pdf1 != 0.0f || pdf2 != 0.0f)
           radiance += throughput * materials[hit_record.hit_entity_id].emission * materials[hit_record.hit_entity_id].emission_strength *
                       bsdf(material, direction, dir, hn) * pdf1 * pdf1 / (pdf1 * pdf1 + pdf2 * pdf2) *
-                      cosine * (-dot(hit_record.normal, dir)) / dot(hhh - hp, hhh - hp) * area_emission;
+                      (-dot(hit_record.normal, dir)) / dot(hhh - hp, hhh - hp) * area_emission;
       }
     }
 
@@ -154,43 +153,16 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       if (fract(RandomFloat()) > fresnel) direction = cos_p * dy + sin_p * dx;
       else direction = direction - dot(direction, hn) * hn * 2.0f;
     }
-    else if (material.material_type == MATERIAL_TYPE_BECKMANN) {
-      //Beckmann importance sampling
-      mat3 rotation = GenerateRotation(hn);
-      vec3 wh = SampleWh(material, rotation, direction);
-      vec3 dir = direction - 2.0f * dot(wh, direction) * wh;
-      if (dot(dir, hn) < 0.0f) {
-        break;
-      }
-      TraceRay(hp, dir);
-      if (dot(hit_record.normal, dir) > 0.0f) hit_record.normal *= -1.0f;
-      hit_record.normal = normalize(hit_record.normal);
-      float cosine = -dot(hit_record.normal, dir);
-      float cur_pdf = pdf(material, direction, dir, hn);
-      throughput *= bsdf(material, direction, dir, hn) / cur_pdf * dot(dir, hn);
-      throughput *= vec3(texture(texture_samplers[material.albedo_texture_id], ht));
-      if (cosine > 0.0f && ray_payload.t != -1.0f && materials[hit_record.hit_entity_id].material_type == MATERIAL_TYPE_EMISSION) {
-        float pdf1 = ray_payload.t * ray_payload.t / cosine / area_emission, pdf2 = cur_pdf;
-        throughput *=  pdf2 * pdf2 / (pdf1 * pdf1 + pdf2 * pdf2);
-      }
-      origin = hp;
-      direction = dir;
-    }
     else {
-      //cosine-weighted importance sampling
-      float a = sqrt(RandomFloat());
-      float b = RandomFloat() * PI * 2;
-      mat3 rotation = GenerateRotation(hn);
-      vec3 dir = rotation * vec3(a * cos(b), a * sin(b), sqrt(1.0f - a * a));
-      if (dot(dir, hn) < 0.0f) dir *= -1;
+      vec3 dir = sample_bsdf(material, direction, hn);
+      if (dot(dir, hn) < 0.0f) break;
       TraceRay(hp, dir);
       if (dot(hit_record.normal, dir) > 0.0f) hit_record.normal *= -1.0f;
       hit_record.normal = normalize(hit_record.normal);
-      float cosine = -dot(hit_record.normal, dir);
-      throughput *= bsdf(material, direction, dir, hn) * PI;
-      throughput *= vec3(texture(texture_samplers[material.albedo_texture_id], ht));
+      float cosine = -dot(hit_record.normal, dir), pdf2 = pdf(material, direction, dir, hn);
+      throughput *= bsdf(material, direction, dir, hn) / pdf2;
       if (cosine > 0.0f && ray_payload.t != -1.0f && materials[hit_record.hit_entity_id].material_type == MATERIAL_TYPE_EMISSION) {
-        float pdf1 = ray_payload.t * ray_payload.t / cosine / area_emission, pdf2 = pdf(material, direction, dir, hn);
+        float pdf1 = ray_payload.t * ray_payload.t / cosine / area_emission;
         throughput *=  pdf2 * pdf2 / (pdf1 * pdf1 + pdf2 * pdf2);
       }
       origin = hp;
