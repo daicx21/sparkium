@@ -375,8 +375,8 @@ Mesh::Mesh(const tinyxml2::XMLElement *element) {
     auto d1 = v1.tex_coord - v0.tex_coord;
     auto d2 = v2.tex_coord - v0.tex_coord;
     if (glm::length(d1) > 0.0f && glm::length(d2) > 0.0f && d1 != d2) {
-      auto tangent = glm::transpose(glm::inverse(glm::mat2{d1, d2})
-          * glm::transpose(glm::mat2x3{v1.position - v0.position, v2.position - v0.position}))[0];
+      auto tangent = (glm::mat2x3{v1.position - v0.position, v2.position - v0.position}
+          * glm::inverse(glm::mat2{d1, d2}))[0];
       vertices_[indices_[i]].tangent += tangent;
       vertices_[indices_[i + 1]].tangent += tangent;
       vertices_[indices_[i + 2]].tangent += tangent;
