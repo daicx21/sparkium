@@ -316,6 +316,7 @@ Mesh::Mesh(const tinyxml2::XMLElement *element) {
   } else {
     std::vector<Vertex> vertices{};
     std::vector<uint32_t> indices{};
+    std::vector<glm::vec3> tangents{};
     for (auto vertex_element = element->FirstChildElement("vertex");
          vertex_element;
          vertex_element = vertex_element->NextSiblingElement("vertex")) {
@@ -333,6 +334,7 @@ Mesh::Mesh(const tinyxml2::XMLElement *element) {
         vertex.tex_coord = StringToVec2(attribute->Value());
       }
       vertices.push_back(vertex);
+      tangents.push_back(glm::vec3{0.0f});
     }
 
     for (auto index_element = element->FirstChildElement("index");
@@ -341,6 +343,19 @@ Mesh::Mesh(const tinyxml2::XMLElement *element) {
       uint32_t index =
           std::stoul(index_element->FindAttribute("value")->Value());
       indices.push_back(index);
+    }
+
+    for (int i = 0; i < indices.size(); i += 3) {
+      auto v0 = vertices[indices[i]];
+      auto v1 = vertices[indices[i + 1]];
+      auto v2 = vertices[indices[i + 2]];
+      auto d1 = v1.tex_coord - v0.tex_coord;
+      auto d2 = v2.tex_coord - v0.tex_coord;
+      auto tangent = glm::transpose(glm::inverse(glm::mat2{d1, d2})
+        * glm::transpose(glm::mat2x3{v1.position - v0.position, v2.position - v0.position}))[0];
+      tangents[indices[i]] += tangent;
+      tangents[indices[i + 1]] += tangent;
+      tangents[indices[i + 2]] += tangent;
     }
 
     for (int i = 0; i < indices.size(); i += 3) {
@@ -358,6 +373,9 @@ Mesh::Mesh(const tinyxml2::XMLElement *element) {
       if (glm::length(v2.normal) < 0.5f) {
         v2.normal = geom_normal;
       }
+      v0.tangent = normalize(tangents[indices[i]]);
+      v1.tangent = normalize(tangents[indices[i + 1]]);
+      v2.tangent = normalize(tangents[indices[i + 2]]);
       vertices_.push_back(v0);
       vertices_.push_back(v1);
       vertices_.push_back(v2);
