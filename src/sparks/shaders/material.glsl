@@ -300,11 +300,12 @@ vec3 bsdf_disney(vec3 in_direction, vec3 out_direction) {
                       (F_SS(win) * F_SS(wout) * (1.0 / (abs(dot(n, win)) + abs(dot(n, wout))) - 0.5) + 0.5) * abs(dot(n, wout));
   vec3 f_diffuse = (1.0 - mat.subsurface) * f_baseDiffuse + mat.subsurface * f_subsurface;
   
+  float eta = ((dot(ng, win) > 0) ? (mat.eta) : (1.0 / mat.eta));
   float lum = luminance(mat.albedo_color);
   vec3 C_tint = vec3(1.0);
   if (lum > 0) C_tint = mat.albedo_color / lum;
   vec3 Ks = vec3(1.0 - mat.specular_tint) + mat.specular_tint * C_tint;
-  vec3 C0 = mat.albedo_color;
+  vec3 C0 = mat.specular * (R0(eta)) * (1 - mat.metallic) * Ks + mat.metallic * mat.albedo_color;
   vec3 Fm = C0 + (vec3(1.0) - C0) * pow(1.0 - abs(dot(h, wout)), 5);
   aspect = sqrt(1.0 - 0.9 * mat.anisotropic);
   alpha_x = max(0.0001, sqr(mat.roughness) / aspect);
@@ -319,7 +320,6 @@ vec3 bsdf_disney(vec3 in_direction, vec3 out_direction) {
   float Gc = get_Gc(win) * get_Gc(wout);
   vec3 f_clearcoat = Fc * Dc * Gc / (4.0 * abs(dot(n, win)));
 
-  float eta = ((dot(ng, win) > 0) ? (mat.eta) : (1.0 / mat.eta));
   bool reflect = (dot(ng, win) * dot(ng, wout) > 0);
   if (!reflect) h = -normalize(win + wout * eta), hl = to_local(h);
   float Fg = fresnel_dielectric(dot(h, win), eta), Dg = get_Dm(), Gg = G(win) * G(wout);
