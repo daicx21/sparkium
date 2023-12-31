@@ -204,12 +204,13 @@ vec3 sample_disney() {
   if (dot(n, win) <= 0.0) return sample_glass();
   float sw_diffuse = (1.0 - mat.specular_transmission) * (1.0 - mat.metallic);
   float sw_metal = (1.0 - mat.specular_transmission * (1.0 - mat.metallic));
-  float sw_clearcoat = 0.25 * mat.clearcoat;
+  float sw_clearcoat = mat.clearcoat;
   float sw_glass = (1.0 - mat.metallic) * mat.specular_transmission;
   float cdf_clearcoat = sw_clearcoat;
   float cdf_metal = cdf_clearcoat + sw_metal;
   float cdf_glass = cdf_metal+ sw_glass;
-  float u_0 = fract(RandomFloat());
+  float cdf_diffuse = cdf_glass + sw_diffuse;
+  float u_0 = RandomFloat() * cdf_diffuse;
   if (u_0 < cdf_clearcoat) return sample_clearcoat();
   if (u_0 < cdf_metal) return sample_metal();
   if (u_0 < cdf_glass) return sample_glass();
@@ -271,8 +272,10 @@ float pdf_disney() {
   if (dot(n, win) * dot(ng, win) < 0) n = -n, tg2 = -tg2, hl = to_local(h);
   float sw_diffuse = (1.0 - mat.specular_transmission) * (1.0 - mat.metallic);
   float sw_metal = (1.0 - mat.specular_transmission * (1.0 - mat.metallic));
-  float sw_clearcoat = 0.25 * mat.clearcoat;
+  float sw_clearcoat = mat.clearcoat;
   float sw_glass = (1.0 - mat.metallic) * mat.specular_transmission;
+  float sum = sw_diffuse + sw_metal + sw_clearcoat + sw_glass;
+  sw_diffuse /= sum; sw_metal /= sum; sw_clearcoat /= sum; sw_glass /= sum;
   if (dot(n, win) < 0 || dot(n, wout) < 0) return pdf_glass();
   return sw_clearcoat * pdf_clearcoat() + sw_metal * pdf_metal() + sw_diffuse * pdf_diffuse() + sw_glass * pdf_glass();
 }
@@ -334,7 +337,7 @@ vec3 bsdf_disney(vec3 in_direction, vec3 out_direction) {
   float w_diffuse = (1.0 - mat.specular_transmission) * (1.0 - mat.metallic);
   float w_sheen = (1.0 - mat.metallic) * mat.sheen;
   float w_metal = (1.0 - mat.specular_transmission * (1.0 - mat.metallic));
-  float w_clearcoat = 0.25 * mat.clearcoat;
+  float w_clearcoat = mat.clearcoat;
   float w_glass = (1.0 - mat.metallic) * mat.specular_transmission;
 
   vec3 f_disney;
