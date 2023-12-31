@@ -119,7 +119,7 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       float cosine = dot(dir, hn);
       
       TraceRay(hp, dir);
-      if (!(cosine <= 0.0f || ray_payload.t < 10.0f || materials[hit_record.hit_entity_id].material_type != MATERIAL_TYPE_EMISSION))
+      if (!(cosine <= 0.0f || ray_payload.t == -1.0f || materials[hit_record.hit_entity_id].material_type != MATERIAL_TYPE_EMISSION))
       {
         if (dot(hit_record.normal, dir) > 0.0f) hit_record.normal *= -1.0f;
         hit_record.normal = normalize(hit_record.normal);

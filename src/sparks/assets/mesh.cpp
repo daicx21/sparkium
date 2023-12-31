@@ -382,6 +382,10 @@ Mesh::Mesh(const tinyxml2::XMLElement *element) {
       vertices_[indices_[i + 2]].tangent += tangent;
     }
   }
+
+  for (int i = 0; i < vertices_.size(); i++) {
+    vertices_[i].tangent = glm::normalize(vertices_[i].tangent);
+  }
 }
 
 }  // namespace sparks
