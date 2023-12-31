@@ -95,7 +95,7 @@ float G(vec3 w) {
 
 float get_Dc(float alpha_g) {
   float a2 = sqr(alpha_g);
-  return (a2 - 1.0) / (PI * log(a2) * (1.0 + (a2 - 1.0) * sqr(hl[2])));
+  return (a2 - 1.0) / (PI * log(max(a2, eps)) * (1.0 + (a2 - 1.0) * sqr(hl[2])));
 }
 
 float get_Gc(vec3 w) {
@@ -174,7 +174,7 @@ vec3 sample_metal() {
 }
 
 vec3 sample_clearcoat() {
-  float alpha_g = (1.0 - mat.clearcoat_gloss) * 0.1 + mat.clearcoat_gloss * 0.001, a2 = sqr(alpha_g);
+  float alpha_g = (1.0 - mat.clearcoat_gloss) * 0.1 + mat.clearcoat_gloss * 0.004, a2 = sqr(alpha_g);
   float u_0 = RandomFloat(), u_1 = RandomFloat();
   float cos_phi = sqrt((1.0 - pow(a2, 1.0 - u_0)) / (1.0 - a2)), sin_phi = sqrt(1.0 - sqr(cos_phi));
   float theta = 2.0 * PI * u_1;
@@ -247,8 +247,8 @@ float pdf_metal() {
 
 float pdf_clearcoat() {
   if (dot(win, ng) <= 0.0f || dot(wout, ng) <= 0.0f) return 0.0;
-  float alpha_g = (1.0 - mat.clearcoat_gloss) * 0.1 + mat.clearcoat_gloss * 0.001;
-  return max(get_Dc(alpha_g) * abs(dot(n, h)) / (4.0 * abs(dot(h, wout))), 0.0);
+  float alpha_g = (1.0 - mat.clearcoat_gloss) * 0.1 + mat.clearcoat_gloss * 0.004;
+  return get_Dc(alpha_g) * abs(dot(n, h)) / (4.0 * abs(dot(h, wout)));
 }
 
 float pdf_glass() {
@@ -314,7 +314,7 @@ vec3 bsdf_disney(vec3 in_direction, vec3 out_direction) {
   vec3 f_metal = Fm * Dm * Gm / (4.0 * abs(dot(n, win)));
 
   vec3 Fc = vec3(0.04 + 0.96 * pow(1.0 - abs(dot(h, wout)), 5));
-  float alpha_g = (1.0 - mat.clearcoat_gloss) * 0.1 + mat.clearcoat_gloss * 0.001;
+  float alpha_g = (1.0 - mat.clearcoat_gloss) * 0.1 + mat.clearcoat_gloss * 0.004;
   float Dc = get_Dc(alpha_g);
   float Gc = get_Gc(win) * get_Gc(wout);
   vec3 f_clearcoat = Fc * Dc * Gc / (4.0 * abs(dot(n, win)));
