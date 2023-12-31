@@ -75,6 +75,7 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
   float RR_P = 0.9f, area_emission = 0.0f;
 
   int tot = lightsources[0];
+  bool medium = false;
 
   for (int b = 0; b < guo.num_bounces; b++) {
     direction = normalize(direction);
@@ -96,7 +97,8 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       break;
     }
 
-    if (material.material_type != MATERIAL_TYPE_SPECULAR && material.material_type != MATERIAL_TYPE_TRANSMISSIVE && tot != 0)
+    if (material.material_type != MATERIAL_TYPE_SPECULAR && material.material_type != MATERIAL_TYPE_TRANSMISSIVE 
+        && material.material_type != MATERIAL_TYPE_MEDIA && tot != 0)
     {
       int id = int(fract(RandomFloat()) * tot) + 1;
       int id1 = lightsources[id * 2 - 1], cnt = lightsources[id * 2];
@@ -155,6 +157,30 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       origin = hp;
       if (fract(RandomFloat()) > fresnel) direction = cos_p * dy + sin_p * dx;
       else direction = direction - dot(direction, hn) * hn * 2.0f;
+    }
+    else if (material.material_type == MATERIAL_TYPE_MEDIA) {
+      if (medium) {
+        float sigma_a = material.volume_parameter.x, sigma_s = material.volume_parameter.y;
+        float sigma_maj = sigma_a + sigma_s;
+        float dist = -log(max(1.0 - RandomFloat(), eps)) / sigma_maj;
+        if (dist >= length(hp - origin)) {
+          origin = hp;
+          medium = false;
+          continue;
+        }
+        else if (RandomFloat() <= sigma_a / sigma_maj) {
+          radiance += throughput * material.emission * material.emission_strength;
+          break;
+        }
+        else {
+          origin += dist * direction;
+          direction = sample_bsdf(direction);
+        }
+      }
+      else {
+        origin = hp;
+        medium = true;
+      }
     }
     else {
       vec3 dir = sample_bsdf(direction);

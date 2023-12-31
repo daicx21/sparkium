@@ -6,6 +6,7 @@ struct Material {
   int albedo_texture_id;
   vec3 emission;
   float emission_strength;
+  vec3 volume_parameter;
   int normal_texture_id;
   float alpha;
   uint material_type;
@@ -28,6 +29,7 @@ struct Material {
 #define MATERIAL_TYPE_TRANSMISSIVE 2
 #define MATERIAL_TYPE_PRINCIPLED 3
 #define MATERIAL_TYPE_EMISSION 4
+#define MATERIAL_TYPE_MEDIA 5
 
 Material mat;
 
@@ -133,7 +135,7 @@ vec3 GeneratePerpendicular() {
   return normalize(hx);
 }
 
-mat3 GenerateRotation() {
+mat3 GenerateRotation(vec3 n) {
   vec3 hx = GeneratePerpendicular();
   vec3 hy = cross(n, hx);
   return mat3(hx, hy, n);
@@ -161,7 +163,7 @@ vec3 sample_visible_normals_aniso(vec3 wl) {
 vec3 sample_diffuse() {
   float a = sqrt(RandomFloat());
   float b = RandomFloat() * PI * 2;
-  mat3 rotation = GenerateRotation();
+  mat3 rotation = GenerateRotation(n);
   return rotation * vec3(a * cos(b), a * sin(b), sqrt(1.0f - a * a));
 }
 
@@ -216,12 +218,30 @@ vec3 sample_disney() {
   return sample_diffuse();
 }
 
+vec3 sample_henyey_greenstein() {
+  float g = mat.volume_parameter.z;
+  float cosTheta;
+  if (abs(g) < 1e-3) {
+    cosTheta = 1.0 - 2.0 * RandomFloat();
+  }
+  else {
+    float d = (1.0 - g * g) / (1.0 + g - 2.0 * g * RandomFloat());
+    cosTheta = -1.0 / (2.0 * g) * (1.0 + g * g - d * d);
+  }
+  float sinTheta = sqrt(max(0.0f, 1.0 - cosTheta * cosTheta));
+  float phi = 2.0 * PI * RandomFloat();
+  return GenerateRotation(win) * vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
+}
+
 vec3 sample_bsdf(vec3 in_direction)
 {
   win = -in_direction;
   switch (mat.material_type) {
     case MATERIAL_TYPE_PRINCIPLED: {
       return sample_disney();
+    }
+    case MATERIAL_TYPE_MEDIA: {
+      return sample_henyey_greenstein();
     }
     default: {
       return sample_diffuse();
@@ -277,12 +297,21 @@ float pdf_disney() {
   return sw_clearcoat * pdf_clearcoat() + sw_metal * pdf_metal() + sw_diffuse * pdf_diffuse() + sw_glass * pdf_glass();
 }
 
+float pdf_henyey_greenstein() {
+  float g = mat.volume_parameter.z;
+  float d = 1.0 + g * g + 2.0 * g * dot(win, wout);
+  return INV_PI / 4.0 * (1.0 - g * g) / (d * sqrt(max(0.0, d)));
+}
+
 float pdf(vec3 in_direction, vec3 out_direction) {
   win = -in_direction; wout = out_direction;
   h = normalize(win + wout); hl = to_local(h);
   switch (mat.material_type) {
     case MATERIAL_TYPE_PRINCIPLED: {
       return pdf_disney();
+    }
+    case MATERIAL_TYPE_MEDIA: {
+      return pdf_henyey_greenstein();
     }
     default: {
       return pdf_diffuse();

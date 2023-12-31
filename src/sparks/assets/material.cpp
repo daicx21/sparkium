@@ -13,7 +13,8 @@ std::unordered_map<std::string, MaterialType> material_name_map{
     {"specular", MATERIAL_TYPE_SPECULAR},
     {"transmissive", MATERIAL_TYPE_TRANSMISSIVE},
     {"principled", MATERIAL_TYPE_PRINCIPLED},
-    {"emission", MATERIAL_TYPE_EMISSION}};
+    {"emission", MATERIAL_TYPE_EMISSION},
+    {"media", MATERIAL_TYPE_MEDIA}};
 }
 
 Material::Material(Scene *scene, const tinyxml2::XMLElement *material_element)
@@ -47,6 +48,11 @@ Material::Material(Scene *scene, const tinyxml2::XMLElement *material_element)
       normal_texture_id =
           scene->AddTexture(normal_texture, PathToFilename(path));
     }
+  }
+
+  child_element = material_element->FirstChildElement("volumetric");
+  if (child_element) {
+    volume_parameter = StringToVec3(child_element->FindAttribute("value")->Value());
   }
 
   child_element = material_element->FirstChildElement("alpha");
