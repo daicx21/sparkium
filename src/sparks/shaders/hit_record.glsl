@@ -71,13 +71,18 @@ HitRecord GetHitRecord(RayPayload ray_payload, vec3 origin, vec3 direction) {
     hit_record.geometry_normal = -hit_record.geometry_normal;
   }
 
-  hit_record.front_face = true;
-  if (dot(direction, hit_record.geometry_normal) > 0.0) {
-    hit_record.front_face = false;
-    hit_record.geometry_normal = -hit_record.geometry_normal;
-    hit_record.normal = -hit_record.normal;
-    hit_record.tangent = -hit_record.tangent;
+  if (materials[hit_record.hit_entity_id].material_type != MATERIAL_TYPE_PRINCIPLED &&
+      materials[hit_record.hit_entity_id].material_type != MATERIAL_TYPE_TRANSMISSIVE) {
+
+    hit_record.front_face = true;
+    if (dot(direction, hit_record.normal) > 0.0) {
+      hit_record.front_face = false;
+      hit_record.geometry_normal = -hit_record.geometry_normal;
+      hit_record.normal = -hit_record.normal;
+      hit_record.tangent = -hit_record.tangent;
+    }
   }
+  
 
   return hit_record;
 }

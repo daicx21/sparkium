@@ -88,7 +88,7 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
 
     pre_gao(material, hit_record.normal, hit_record.geometry_normal, hit_record.tangent);
 
-    vec3 hn = hit_record.normal, hp = hit_record.position, hgn = hit_record.geometry_normal;
+    vec3 hn = hit_record.normal, hp = hit_record.position;
     vec2 ht = hit_record.tex_coord;
 
     if (material.material_type == MATERIAL_TYPE_EMISSION) {
@@ -159,9 +159,8 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
     else {
       vec3 dir = sample_bsdf(direction);
       TraceRay(hp, dir);
-      if (dot(hit_record.normal, dir) > 0.0f) hit_record.normal *= -1.0f;
-      hit_record.normal = normalize(hit_record.normal);
       float cosine = -dot(hit_record.normal, dir), pdf2 = pdf(direction, dir);
+      if (pdf2 <= 0.0) break;
       throughput *= bsdf(direction, dir) / pdf2;
       if (cosine > 0.0f && ray_payload.t != -1.0f && materials[hit_record.hit_entity_id].material_type == MATERIAL_TYPE_EMISSION) {
         float pdf1 = ray_payload.t * ray_payload.t / cosine / area_emission;
