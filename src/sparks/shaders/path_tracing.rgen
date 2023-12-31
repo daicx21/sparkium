@@ -139,7 +139,7 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
     }
     else if (material.material_type == MATERIAL_TYPE_TRANSMISSIVE) {
       throughput *= hit_record.base_color;
-      float eta = material.refraction_ratio;
+      float eta = material.eta;
       float cos_t = dot(hn, direction), sin_t = sqrt(1.0f - cos_t * cos_t);
       vec3 dx = normalize(direction - dot(direction, hn) * hn), dy = hn;
       if (cos_t < 0.0f) dy = - dy, cos_t = -cos_t;

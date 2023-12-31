@@ -6,9 +6,8 @@ struct Material {
   int albedo_texture_id;
   vec3 emission;
   float emission_strength;
-  float refraction_ratio;
+  int normal_texture_id;
   float alpha;
-  float beta;
   uint material_type;
   float specular_transmission;
   float metallic;
@@ -22,15 +21,13 @@ struct Material {
   float clearcoat;
   float clearcoat_gloss;
   float eta;
-  int normal_texture_id;
 };
 
 #define MATERIAL_TYPE_LAMBERTIAN 0
 #define MATERIAL_TYPE_SPECULAR 1
 #define MATERIAL_TYPE_TRANSMISSIVE 2
 #define MATERIAL_TYPE_PRINCIPLED 3
-#define MATERIAL_TYPE_BECKMANN 4
-#define MATERIAL_TYPE_EMISSION 5
+#define MATERIAL_TYPE_EMISSION 4
 
 Material mat;
 
@@ -48,6 +45,10 @@ vec3 to_local(vec3 w) {
   return vec3(dot(w, tg1), dot(w, tg2), dot(w, n));
 }
 
+vec3 to_world(vec3 w) {
+  return tg1 * w[0] + tg2 * w[1] + n * w[2];
+}
+
 vec3 gao_1, gao_2;
 
 void gao_frame(vec3 n) {
@@ -62,8 +63,8 @@ void gao_frame(vec3 n) {
   }
 }
 
-vec3 to_world(vec3 w) {
-  return tg1 * w[0] + tg2 * w[1] + n * w[2];
+float R0(float eta) {
+  return sqr(eta - 1) / sqr(eta + 1);
 }
 
 float F_D(vec3 w) {
@@ -101,6 +102,19 @@ float get_Gc(vec3 w) {
   return 1.0 / (1.0 + Lambda_c(w));
 }
 
+float fresnel_dielectric1(float n_dot_i, float n_dot_t, float eta) {
+    float rs = (n_dot_i - eta * n_dot_t) / (n_dot_i + eta * n_dot_t);
+    float rp = (eta * n_dot_i - n_dot_t) / (eta * n_dot_i + n_dot_t);
+    return (rs * rs + rp * rp) * 0.5;
+}
+
+float fresnel_dielectric(float n_dot_i, float eta) {
+  float n_dot_t_sq = 1.0 - (1.0 - n_dot_i * n_dot_i) / (eta * eta);
+  if (n_dot_t_sq < 0.0) return 1.0;
+  float n_dot_t = sqrt(n_dot_t_sq);
+  return fresnel_dielectric1(abs(n_dot_i), n_dot_t, eta);
+}
+
 bool SameHemiSphere(vec3 in_direction, vec3 out_direction, vec3 normal_direction) {
   return dot(-in_direction, normal_direction) * dot(out_direction, normal_direction) >= 0;
 }
@@ -125,22 +139,23 @@ mat3 GenerateRotation() {
   return mat3(hx, hy, n);
 }
 
-float fresnel_dielectric1(float n_dot_i, float n_dot_t, float eta) {
-    float rs = (n_dot_i - eta * n_dot_t) / (n_dot_i + eta * n_dot_t);
-    float rp = (eta * n_dot_i - n_dot_t) / (eta * n_dot_i + n_dot_t);
-    return (rs * rs + rp * rp) * 0.5;
-}
-
-float fresnel_dielectric(float n_dot_i, float eta) {
-  float n_dot_t_sq = 1.0 - (1.0 - n_dot_i * n_dot_i) / (eta * eta);
-  if (n_dot_t_sq < 0.0) return 1.0;
-  float n_dot_t = sqrt(n_dot_t_sq);
-  return fresnel_dielectric1(abs(n_dot_i), n_dot_t, eta);
-}
-
 void pre_gao(Material material, vec3 N, vec3 NG, vec3 TG1) {
   mat = material; n = N; ng = NG;
   tg1 = TG1; tg2 = cross(n, tg1);
+}
+
+vec3 sample_visible_normals_aniso(vec3 wl) {
+  float flag = 1.0;
+  if (wl[2] < 0.0) wl = -wl, flag = -1.0;
+  vec3 hemi_dir_in = normalize(vec3(alpha_x * wl[0], alpha_y * wl[1], wl[2]));
+  float u_0 = RandomFloat(), u_1 = RandomFloat();
+  float r = sqrt(u_0), phi = 2.0 * PI * u_1;
+  float t1 = r * cos(phi), t2 = r * sin(phi);
+  float s = (1.0 + hemi_dir_in.z) * 0.5;
+  t2 = (1.0 - s) * sqrt(1.0 - t1 * t1) + s * t2;
+  gao_frame(hemi_dir_in);
+  vec3 hemi_N = t1 * gao_1 + t2 * gao_2 + sqrt(max(0.0, 1.0 - t1 * t1 - t2 * t2)) * hemi_dir_in;
+  return normalize(vec3(alpha_x * hemi_N.x, alpha_y * hemi_N.y, max(0.0, hemi_N.z))) * flag;
 }
 
 vec3 sample_diffuse() {
@@ -150,74 +165,55 @@ vec3 sample_diffuse() {
   return rotation * vec3(a * cos(b), a * sin(b), sqrt(1.0f - a * a));
 }
 
-vec3 sample_visible_normals_aniso1(vec3 wl) {
-  vec3 hemi_dir_in = normalize(vec3(alpha_x * wl[0], alpha_y * wl[1], wl[2]));
-
-  float u_0 = RandomFloat(), u_1 = RandomFloat();
-
-  float r = sqrt(u_0), phi = 2.0 * PI * u_1;
-  float t1 = r * cos(phi), t2 = r * sin(phi);
-
-  float s = (1.0 + hemi_dir_in.z) * 0.5;
-  t2 = (1.0 - s) * sqrt(1.0 - t1 * t1) + s * t2;
-
-  gao_frame(hemi_dir_in);
-  vec3 hemi_N = t1 * gao_1 + t2 * gao_2 + sqrt(max(0.0, 1.0 - t1 * t1 - t2 * t2)) * hemi_dir_in;
-
-  return normalize(vec3(alpha_x * hemi_N.x, alpha_y * hemi_N.y, max(0.0, hemi_N.z)));
-}
-
-vec3 sample_visible_normals_aniso(vec3 wl) {
-  if (wl[2] < 0.0) return -sample_visible_normals_aniso1(-wl);
-  vec3 hemi_dir_in = normalize(vec3(alpha_x * wl[0], alpha_y * wl[1], wl[2]));
-
-  float u_0 = RandomFloat(), u_1 = RandomFloat();
-
-  float r = sqrt(u_0), phi = 2.0 * PI * u_1;
-  float t1 = r * cos(phi), t2 = r * sin(phi);
-
-  float s = (1.0 + hemi_dir_in.z) * 0.5;
-  t2 = (1.0 - s) * sqrt(1.0 - t1 * t1) + s * t2;
-
-  gao_frame(hemi_dir_in);
-  vec3 hemi_N = t1 * gao_1 + t2 * gao_2 + sqrt(max(0.0, 1.0 - t1 * t1 - t2 * t2)) * hemi_dir_in;
-
-  return normalize(vec3(alpha_x * hemi_N.x, alpha_y * hemi_N.y, max(0.0, hemi_N.z)));
-}
-
-vec3 sample_disney() {
-  if (dot(n, win) * dot(ng, win) < 0.0) n = -n, tg2 = -tg2;
-  //return sample_diffuse();
-  
-  /*aspect = sqrt(1.0 - 0.9 * mat.anisotropic);
+vec3 sample_metal() {
+  aspect = sqrt(1.0 - 0.9 * mat.anisotropic);
   alpha_x = max(0.0001, sqr(mat.roughness) / aspect);
   alpha_y = max(0.0001, sqr(mat.roughness) * aspect);
   h = to_world(sample_visible_normals_aniso(to_local(win)));
-  return normalize(2.0 * dot(win, h) * h - win);*/
+  return normalize(2.0 * dot(win, h) * h - win);
+}
 
-  /*float alpha_g = (1.0 - mat.clearcoat_gloss) * 0.1 + mat.clearcoat_gloss * 0.001, a2 = sqr(alpha_g);
+vec3 sample_clearcoat() {
+  float alpha_g = (1.0 - mat.clearcoat_gloss) * 0.1 + mat.clearcoat_gloss * 0.001, a2 = sqr(alpha_g);
   float u_0 = RandomFloat(), u_1 = RandomFloat();
   float cos_phi = sqrt((1.0 - pow(a2, 1.0 - u_0)) / (1.0 - a2)), sin_phi = sqrt(1.0 - sqr(cos_phi));
   float theta = 2.0 * PI * u_1;
   h = to_world(vec3(sin_phi * cos(theta), sin_phi * sin(theta), cos_phi));
-  return 2.0 * dot(h, win) * h - win;*/
-  float eta = ((dot(ng, win) > 0.0) ? (mat.eta) : (1.0 / mat.eta));
+  return 2.0 * dot(h, win) * h - win;
+}
 
+vec3 sample_glass() {
+  float eta = ((dot(ng, win) > 0.0) ? (mat.eta) : (1.0 / mat.eta));
   aspect = sqrt(1.0 - 0.9 * mat.anisotropic);
   alpha_x = max(0.0001, sqr(mat.roughness) / aspect);
   alpha_y = max(0.0001, sqr(mat.roughness) * aspect);
   h = to_world(sample_visible_normals_aniso(to_local(win)));
   if (dot(h, n) < 0.0) h = -h;
-
   float h_dot_in = dot(h, win);
   float F = fresnel_dielectric(h_dot_in, eta);
-
   if (fract(RandomFloat()) <= F) return normalize(2.0 * dot(win, h) * h - win);
   float h_dot_out_sq = 1.0 - (1.0 - h_dot_in * h_dot_in) / (eta * eta);
   if (h_dot_out_sq < 0.0) h_dot_out_sq = 0.0;
   if (h_dot_in < 0) h = -h;
   float h_dot_out = sqrt(h_dot_out_sq);
   return normalize(-win / eta + (abs(h_dot_in) / eta - h_dot_out) * h);
+}
+
+vec3 sample_disney() {
+  if (dot(n, win) * dot(ng, win) < 0.0) n = -n, tg2 = -tg2;
+  if (dot(n, win) <= 0.0) return sample_glass();
+  float sw_diffuse = (1.0 - mat.specular_transmission) * (1.0 - mat.metallic);
+  float sw_metal = (1.0 - mat.specular_transmission * (1.0 - mat.metallic));
+  float sw_clearcoat = 0.25 * mat.clearcoat;
+  float sw_glass = (1.0 - mat.metallic) * mat.specular_transmission;
+  float cdf_clearcoat = sw_clearcoat;
+  float cdf_metal = cdf_clearcoat + sw_metal;
+  float cdf_glass = cdf_metal+ sw_glass;
+  float u_0 = fract(RandomFloat());
+  if (u_0 < cdf_clearcoat) return sample_clearcoat();
+  if (u_0 < cdf_metal) return sample_metal();
+  if (u_0 < cdf_glass) return sample_glass();
+  return sample_diffuse();
 }
 
 vec3 sample_bsdf(vec3 in_direction)
@@ -273,14 +269,12 @@ float pdf_glass() {
 
 float pdf_disney() {
   if (dot(n, win) * dot(ng, win) < 0) n = -n, tg2 = -tg2, hl = to_local(h);
-
-  //return pdf_diffuse();
-
-  //return pdf_metal();
-
-  //return pdf_clearcoat();
-  
-  return pdf_glass();
+  float sw_diffuse = (1.0 - mat.specular_transmission) * (1.0 - mat.metallic);
+  float sw_metal = (1.0 - mat.specular_transmission * (1.0 - mat.metallic));
+  float sw_clearcoat = 0.25 * mat.clearcoat;
+  float sw_glass = (1.0 - mat.metallic) * mat.specular_transmission;
+  if (dot(n, win) < 0 || dot(n, wout) < 0) return pdf_glass();
+  return sw_clearcoat * pdf_clearcoat() + sw_metal * pdf_metal() + sw_diffuse * pdf_diffuse() + sw_glass * pdf_glass();
 }
 
 float pdf(vec3 in_direction, vec3 out_direction) {
@@ -306,7 +300,12 @@ vec3 bsdf_disney(vec3 in_direction, vec3 out_direction) {
                       (F_SS(win) * F_SS(wout) * (1.0 / (abs(dot(n, win)) + abs(dot(n, wout))) - 0.5) + 0.5) * abs(dot(n, wout));
   vec3 f_diffuse = (1.0 - mat.subsurface) * f_baseDiffuse + mat.subsurface * f_subsurface;
   
-  vec3 Fm = mat.albedo_color + (vec3(1.0) - mat.albedo_color) * pow(1.0 - abs(dot(h, wout)), 5);
+  float lum = luminance(mat.albedo_color);
+  vec3 C_tint = vec3(1.0);
+  if (lum > 0) C_tint = mat.albedo_color / lum;
+  vec3 Ks = vec3(1.0 - mat.specular_tint) + mat.specular_tint * C_tint;
+  vec3 C0 = mat.albedo_color;
+  vec3 Fm = C0 + (vec3(1.0) - C0) * pow(1.0 - abs(dot(h, wout)), 5);
   aspect = sqrt(1.0 - 0.9 * mat.anisotropic);
   alpha_x = max(0.0001, sqr(mat.roughness) / aspect);
   alpha_y = max(0.0001, sqr(mat.roughness) * aspect);
@@ -329,13 +328,23 @@ vec3 bsdf_disney(vec3 in_direction, vec3 out_direction) {
   else f_glass = sqrt(mat.albedo_color) * (1 - Fg) * Dg * Gg * abs(dot(h, win) * dot(h, wout)) /
                  (abs(dot(n, win)) * sqr(dot(h, win) + eta * dot(h, wout)));
 
-  float lum = luminance(mat.albedo_color);
-  vec3 C_tint = vec3(1.0);
-  if (lum > 0) C_tint = mat.albedo_color / lum;
   vec3 C_sheen = vec3(1.0 - mat.sheen_tint) + mat.sheen_tint * C_tint;
   vec3 f_sheen = C_sheen * pow(1.0 - abs(dot(h, wout)), 5) * abs(dot(n, wout));
 
-  return f_glass;
+  float w_diffuse = (1.0 - mat.specular_transmission) * (1.0 - mat.metallic);
+  float w_sheen = (1.0 - mat.metallic) * mat.sheen;
+  float w_metal = (1.0 - mat.specular_transmission * (1.0 - mat.metallic));
+  float w_clearcoat = 0.25 * mat.clearcoat;
+  float w_glass = (1.0 - mat.metallic) * mat.specular_transmission;
+
+  vec3 f_disney;
+  if (dot(n, win) < 0 || dot(n, wout) < 0) f_disney = w_glass * f_glass;
+  else
+  {
+    if (reflect) f_disney = w_diffuse * f_diffuse + w_sheen * f_sheen + w_metal * f_metal + w_clearcoat * f_clearcoat + w_glass * f_glass;
+    else f_disney = w_glass * f_glass;
+  }
+  return f_disney;
 }
 
 vec3 bsdf(vec3 in_direction, vec3 out_direction) {

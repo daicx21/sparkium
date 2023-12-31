@@ -13,7 +13,6 @@ std::unordered_map<std::string, MaterialType> material_name_map{
     {"specular", MATERIAL_TYPE_SPECULAR},
     {"transmissive", MATERIAL_TYPE_TRANSMISSIVE},
     {"principled", MATERIAL_TYPE_PRINCIPLED},
-    {"beckmann", MATERIAL_TYPE_BECKMANN},
     {"emission", MATERIAL_TYPE_EMISSION}};
 }
 
@@ -50,6 +49,11 @@ Material::Material(Scene *scene, const tinyxml2::XMLElement *material_element)
     }
   }
 
+  child_element = material_element->FirstChildElement("alpha");
+  if (child_element) {
+    alpha = std::stof(child_element->FindAttribute("value")->Value());
+  }
+
   child_element = material_element->FirstChildElement("emission");
   if (child_element) {
     emission = StringToVec3(child_element->FindAttribute("value")->Value());
@@ -58,21 +62,6 @@ Material::Material(Scene *scene, const tinyxml2::XMLElement *material_element)
   child_element = material_element->FirstChildElement("emission_strength");
   if (child_element) {
     emission_strength = std::stof(child_element->FindAttribute("value")->Value());
-  }
-
-  child_element = material_element->FirstChildElement("refraction_ratio");
-  if (child_element) {
-    refraction_ratio = std::stof(child_element->FindAttribute("value")->Value());
-  }
-
-  child_element = material_element->FirstChildElement("alpha");
-  if (child_element) {
-    alpha = std::stof(child_element->FindAttribute("value")->Value());
-  }
-
-  child_element = material_element->FirstChildElement("beta");
-  if (child_element) {
-    beta = std::stof(child_element->FindAttribute("value")->Value());
   }
 
   child_element = material_element->FirstChildElement("specular_transmission");
