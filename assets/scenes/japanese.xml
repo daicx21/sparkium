@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<scene>
+    <camera>
+        <transform type="lookat">
+            <eye value="600 600 300"/>
+            <center value="200 200 200"/>
+            <up value="0.0 1.0 0.0"/>
+        </transform>
+        <fov value="40"/>
+        <speed value="100"/>
+    </camera>
+
+    <!--Light-->
+    <model name="Light">
+        <vertex position="900 600 800"/>
+        <vertex position="900 600 900"/>
+        <vertex position="800 600 900"/>
+        <vertex position="800 600 800"/>
+        <index value="0"/>
+        <index value="1"/>
+        <index value="3"/>
+        <index value="1"/>
+        <index value="3"/>
+        <index value="2"/>
+
+        <material type="emission">
+            <emission value="1.0 1.0 1.0"/>
+            <emission_strength value="30.0"/>
+        </material>
+    </model>
+
+
+    <model type="obj" name="model1">
+        <filename value="../../meshes/model1.obj"/>
+
+        <material type="lambertian">
+            <albedo value="1 1 1"/>
+            <albedo_texture value="../../textures/01___Default_albedo.jpg"/>
+            <normal_texture value="../../textures/01___Default_normal.jpg"/>
+        </material>
+    </model>
+
+    <model type="obj" name="model2">
+        <filename value="../../meshes/model2.obj"/>
+
+        <material type="lambertian">
+            <albedo value="1 1 1"/>
+            <albedo_texture value="../../textures/07___Default_albedo.jpg"/>
+            <normal_texture value="../../textures/07___Default_normal.jpg"/>
+        </material>
+    </model>
+
+    <model type="obj" name="model3">
+        <filename value="../../meshes/model3.obj"/>
+
+        <material type="lambertian">
+            <albedo value="1 1 1"/>
+            <albedo_texture value="../../textures/08___Default_albedo.jpg"/>
+            <normal_texture value="../../textures/08___Default_normal.jpg"/>
+        </material>
+    </model>
+
+    <model type="obj" name="model4">
+        <filename value="../../meshes/model4.obj"/>
+
+        <material type="lambertian">
+            <albedo value="1 1 1"/>
+            <albedo_texture value="../../textures/09___Default_albedo.jpg"/>
+            <normal_texture value="../../textures/09___Default_normal.jpg"/>
+        </material>
+    </model>
+
+    <model type="obj" name="model5">
+        <filename value="../../meshes/model5.obj"/>
+
+        <material type="lambertian">
+            <albedo value="1 1 1"/>
+            <albedo_texture value="../../textures/13___Default_albedo.jpg"/>
+            <normal_texture value="../../textures/13___Default_normal.jpg"/>
+        </material>
+    </model>
+
+    <model type="obj" name="model6">
+        <filename value="../../meshes/model6.obj"/>
+
+        <material type="lambertian">
+            <albedo value="1 1 1"/>
+            <albedo_texture value="../../textures/14___Default_albedo.jpg"/>
+            <normal_texture value="../../textures/14___Default_normal.jpg"/>
+        </material>
+    </model>
+
+    <model type="obj" name="model7">
+        <filename value="../../meshes/model7.obj"/>
+
+        <material type="lambertian">
+            <albedo value="1 1 1"/>
+            <albedo_texture value="../../textures/15___Default_albedo.jpg"/>
+            <normal_texture value="../../textures/15___Default_normal.jpg"/>
+        </material>
+    </model>
+
+    <model type="obj" name="model8">
+        <filename value="../../meshes/model8.obj"/>
+
+        <material type="lambertian">
+            <albedo value="1 1 1"/>
+            <albedo_texture value="../../textures/19___Default_albedo.jpg"/>
+            <normal_texture value="../../textures/19___Default_normal.jpg"/>
+        </material>
+    </model>
+
+    <model type="obj" name="model9">
+        <filename value="../../meshes/model9.obj"/>
+
+        <material type="lambertian">
+            <albedo value="1 1 1"/>
+            <albedo_texture value="../../textures/20___Default_albedo.jpg"/>
+            <normal_texture value="../../textures/20___Default_normal.jpg"/>
+        </material>
+    </model>
+
+</scene>
