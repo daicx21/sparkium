@@ -202,7 +202,6 @@ vec3 sample_glass() {
 }
 
 vec3 sample_disney() {
-  if (dot(n, win) * dot(ng, win) < 0.0) n = -n, tg2 = -tg2;
   if (dot(n, win) <= 0.0) return sample_glass();
   float sw_diffuse = (1.0 - mat.specular_transmission) * (1.0 - mat.metallic);
   float sw_metal = (1.0 - mat.specular_transmission * (1.0 - mat.metallic));
@@ -289,7 +288,6 @@ float pdf_glass() {
 }
 
 float pdf_disney() {
-  if (dot(n, win) * dot(ng, win) < 0) n = -n, tg2 = -tg2, hl = to_local(h);
   float sw_diffuse = (1.0 - mat.specular_transmission) * (1.0 - mat.metallic);
   float sw_metal = (1.0 - mat.specular_transmission * (1.0 - mat.metallic));
   float sw_clearcoat = mat.clearcoat;
@@ -325,8 +323,6 @@ float pdf(vec3 in_direction, vec3 out_direction) {
 vec3 bsdf_disney(vec3 in_direction, vec3 out_direction) {
   win = -in_direction; wout = out_direction;
   h = normalize(win + wout); hl = to_local(h);
-  if (dot(n, win) * dot(ng, win) < 0) n = -n, tg2 = -tg2, hl = to_local(h);
-  
   vec3 f_baseDiffuse = mat.albedo_color * INV_PI * F_D(win) * F_D(wout) * abs(dot(n, wout));
   vec3 f_subsurface = mat.albedo_color * 1.25 * INV_PI *
                       (F_SS(win) * F_SS(wout) * (1.0 / (abs(dot(n, win)) + abs(dot(n, wout))) - 0.5) + 0.5) * abs(dot(n, wout));

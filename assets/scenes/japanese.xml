@@ -12,10 +12,10 @@
 
     <!--Light-->
     <model name="Light">
-        <vertex position="900 600 800"/>
-        <vertex position="900 600 900"/>
-        <vertex position="800 600 900"/>
-        <vertex position="800 600 800"/>
+        <vertex position="0 1000 0"/>
+        <vertex position="0 1000 1000"/>
+        <vertex position="1000 1000 1000"/>
+        <vertex position="1000 1000 0"/>
         <index value="0"/>
         <index value="1"/>
         <index value="3"/>
@@ -25,10 +25,9 @@
 
         <material type="emission">
             <emission value="1.0 1.0 1.0"/>
-            <emission_strength value="30.0"/>
+            <emission_strength value="1000000000.0"/>
         </material>
     </model>
-
 
     <model type="obj" name="model1">
         <filename value="../../meshes/model1.obj"/>
@@ -106,7 +105,6 @@
         <material type="lambertian">
             <albedo value="1 1 1"/>
             <albedo_texture value="../../textures/19___Default_albedo.jpg"/>
-            <normal_texture value="../../textures/19___Default_normal.jpg"/>
         </material>
     </model>
 
@@ -116,8 +114,8 @@
         <material type="lambertian">
             <albedo value="1 1 1"/>
             <albedo_texture value="../../textures/20___Default_albedo.jpg"/>
-            <normal_texture value="../../textures/20___Default_normal.jpg"/>
         </material>
     </model>
+    
 
 </scene>

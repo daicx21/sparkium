@@ -84,12 +84,15 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       radiance += throughput * SampleEnvmap(direction);
       break;
     }
+    if (abs(dot(hit_record.geometry_normal, direction)) < eps) break;
+
     Material material = materials[hit_record.hit_entity_id];
     material.albedo_color = hit_record.base_color;
 
     pre_gao(material, hit_record.normal, hit_record.geometry_normal, hit_record.tangent);
 
-    vec3 hn = hit_record.normal, hp = hit_record.position;
+    int old_hit_entity_id = hit_record.hit_entity_id;
+    vec3 hn = hit_record.normal, hp = hit_record.position, hgn = hit_record.geometry_normal, direction_old = direction;
     vec2 ht = hit_record.tex_coord;
 
     if (material.material_type == MATERIAL_TYPE_EMISSION) {
@@ -195,24 +198,34 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       origin = hp;
       direction = dir;
     }
+    if (abs(dot(direction, hgn)) < eps) break;
+    if (dot(hgn, direction_old) * dot(hgn, direction) > 0.0)
+    {
+      if (inside_id == 0) inside_id = old_hit_entity_id;
+      else if (inside_id == old_hit_entity_id) inside_id = 0;
+    }
   }
   return radiance;
 }
 
 void main() {
-  const vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5);
-  const vec2 inUV = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
-  vec2 d = inUV * 2.0 - 1.0;
 
   mat4 camera_to_world = inverse(guo.camera);
   mat4 screen_to_camera = inverse(guo.projection);
 
+  const vec2 XY = vec2(gl_LaunchIDEXT.xy);
+
   for (int i = 0; i < guo.num_samples; i++) {
-    InitRandomSeed(uint(pixelCenter.x), uint(pixelCenter.y),
-                   guo.accumulated_sample + i);
+    InitRandomSeed(uint(XY.x), uint(XY.y), guo.accumulated_sample + i);
+    const vec2 pixelCenter = XY + vec2(RandomFloat(), RandomFloat());
+    const vec2 inUV = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
+    vec2 d = inUV * 2.0 - 1.0;
+    
     vec4 origin = camera_to_world * vec4(0, 0, 0, 1);
     vec4 target = screen_to_camera * vec4(d.x, d.y, 1, 1);
     vec4 direction = camera_to_world * vec4(normalize(target.xyz), 0);
+
+    inside_id = 0;
 
     imageStore(accumulation_color, ivec2(gl_LaunchIDEXT.xy),
                imageLoad(accumulation_color, ivec2(gl_LaunchIDEXT.xy)) +

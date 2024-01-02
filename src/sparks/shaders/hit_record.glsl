@@ -1,3 +1,5 @@
+#include "constants.glsl"
+
 struct HitRecord {
   int hit_entity_id;
   vec3 position;
@@ -5,14 +7,17 @@ struct HitRecord {
   vec3 geometry_normal;
   vec3 tangent;
   vec2 tex_coord;
-  bool front_face;
-
   vec3 base_color;
-  vec3 emission;
-  float emission_strength;
-  float alpha;
   uint material_type;
 };
+
+int inside_id;
+
+vec3 gao1(vec3 n) {
+  if (n[2] < -1.0 + eps) return vec3(0.0, -1.0, 0.0);
+  float a = 1.0 / (1.0 + n[2]), b = -n[0] * n[1] * a;
+  return vec3(1.0 - n[0] * n[0] * a, b, -n[0]);
+}
 
 HitRecord GetHitRecord(RayPayload ray_payload, vec3 origin, vec3 direction) {
   HitRecord hit_record;
@@ -40,13 +45,20 @@ HitRecord GetHitRecord(RayPayload ray_payload, vec3 origin, vec3 direction) {
   hit_record.geometry_normal =
       normalize(transpose(inverse(object_to_world)) *
                 cross(v1.position - v0.position, v2.position - v0.position));
-  hit_record.tangent =
-      normalize(object_to_world * mat3(v0.tangent, v1.tangent, v2.tangent) *
-                ray_payload.barycentric);
+  hit_record.tangent = object_to_world * mat3(v0.tangent, v1.tangent, v2.tangent) * ray_payload.barycentric;
   hit_record.tangent = normalize(hit_record.tangent
       - dot(hit_record.tangent, hit_record.normal) * hit_record.normal);
-  hit_record.tex_coord = mat3x2(v0.tex_coord, v1.tex_coord, v2.tex_coord) *
-                         ray_payload.barycentric;
+
+  if (dot(direction, hit_record.geometry_normal) > 0.0) hit_record.geometry_normal = -hit_record.geometry_normal;
+  if (hit_record.hit_entity_id == inside_id && inside_id != 0) hit_record.geometry_normal = -hit_record.geometry_normal;
+  if (dot(direction, hit_record.geometry_normal) * dot(direction, hit_record.normal) < 0.0) hit_record.normal = -hit_record.normal;
+  
+  if (!(abs(dot(hit_record.tangent, hit_record.tangent) - 1) < eps && abs(dot(hit_record.tangent, hit_record.normal)) < eps))
+  {
+    hit_record.tangent = gao1(hit_record.normal);
+  }
+  
+  hit_record.tex_coord = mat3x2(v0.tex_coord, v1.tex_coord, v2.tex_coord) * ray_payload.barycentric;
 
   Material mat = materials[hit_record.hit_entity_id];
 
@@ -54,35 +66,11 @@ HitRecord GetHitRecord(RayPayload ray_payload, vec3 origin, vec3 direction) {
     hit_record.normal = normalize(mat3(hit_record.tangent,
         cross(hit_record.normal, hit_record.tangent), hit_record.normal) *
         (2.0f * vec3(texture(texture_samplers[mat.normal_texture_id], hit_record.tex_coord)) - vec3(1.0f)));
-    hit_record.tangent = normalize(hit_record.tangent
-      - dot(hit_record.tangent, hit_record.normal) * hit_record.normal);
+    hit_record.tangent = normalize(hit_record.tangent - dot(hit_record.tangent, hit_record.normal) * hit_record.normal);
   }
 
-  hit_record.base_color =
-      mat.albedo_color *
-      texture(texture_samplers[mat.albedo_texture_id], hit_record.tex_coord)
-          .xyz;
-  hit_record.emission = mat.emission;
-  hit_record.emission_strength = mat.emission_strength;
-  hit_record.alpha = mat.alpha;
+  hit_record.base_color = mat.albedo_color * texture(texture_samplers[mat.albedo_texture_id], hit_record.tex_coord).xyz;
   hit_record.material_type = mat.material_type;
-
-  if (dot(hit_record.geometry_normal, hit_record.normal) < 0.0) {
-    hit_record.geometry_normal = -hit_record.geometry_normal;
-  }
-
-  if (materials[hit_record.hit_entity_id].material_type != MATERIAL_TYPE_PRINCIPLED &&
-      materials[hit_record.hit_entity_id].material_type != MATERIAL_TYPE_TRANSMISSIVE) {
-
-    hit_record.front_face = true;
-    if (dot(direction, hit_record.normal) > 0.0) {
-      hit_record.front_face = false;
-      hit_record.geometry_normal = -hit_record.geometry_normal;
-      hit_record.normal = -hit_record.normal;
-      hit_record.tangent = -hit_record.tangent;
-    }
-  }
-  
 
   return hit_record;
 }
