@@ -68,7 +68,7 @@ class Renderer {
   void WorkerThread();
 
   RendererSettings renderer_settings_;
-  Scene scene_{"../../scenes/disney_bsdf.xml"};
+  Scene scene_{"../../../assets/scenes/base.xml"};
 
   /* CPU Renderer Assets */
   std::vector<glm::vec4> accumulation_color_;

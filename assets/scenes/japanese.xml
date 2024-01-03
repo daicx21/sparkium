@@ -10,7 +10,6 @@
         <speed value="100"/>
     </camera>
 
-    <!--Light-->
     <model name="Light">
         <vertex position="0 1000 0"/>
         <vertex position="0 1000 1000"/>
@@ -25,95 +24,97 @@
 
         <material type="emission">
             <emission value="1.0 1.0 1.0"/>
-            <emission_strength value="1000000000.0"/>
+            <emission_strength value="10.0"/>
         </material>
     </model>
 
     <model type="obj" name="model1">
-        <filename value="../../meshes/model1.obj"/>
+        <filename value="../../../assets/meshes/japanese/model1.obj"/>
 
         <material type="lambertian">
             <albedo value="1 1 1"/>
-            <albedo_texture value="../../textures/01___Default_albedo.jpg"/>
-            <normal_texture value="../../textures/01___Default_normal.jpg"/>
+            <albedo_texture value="../../../assets/textures/japanese/08___Default_albedo.jpg"/>
+            <normal_texture value="../../../assets/textures/japanese/08___Default_normal.png"/>
         </material>
     </model>
 
     <model type="obj" name="model2">
-        <filename value="../../meshes/model2.obj"/>
+        <filename value="../../../assets/meshes/japanese/model2.obj"/>
 
         <material type="lambertian">
             <albedo value="1 1 1"/>
-            <albedo_texture value="../../textures/07___Default_albedo.jpg"/>
-            <normal_texture value="../../textures/07___Default_normal.jpg"/>
+            <albedo_texture value="../../../assets/textures/japanese/09___Default_albedo.jpg"/>
+            <normal_texture value="../../../assets/textures/japanese/09___Default_normal.png"/>
         </material>
     </model>
 
     <model type="obj" name="model3">
-        <filename value="../../meshes/model3.obj"/>
+        <filename value="../../../assets/meshes/japanese/model3.obj"/>
 
         <material type="lambertian">
             <albedo value="1 1 1"/>
-            <albedo_texture value="../../textures/08___Default_albedo.jpg"/>
-            <normal_texture value="../../textures/08___Default_normal.jpg"/>
+            <albedo_texture value="../../../assets/textures/japanese/19___Default_albedo.jpg"/>
+            <normal_texture value="../../../assets/textures/japanese/19___Default_normal.png"/>
         </material>
     </model>
 
     <model type="obj" name="model4">
-        <filename value="../../meshes/model4.obj"/>
+        <filename value="../../../assets/meshes/japanese/model4.obj"/>
 
         <material type="lambertian">
             <albedo value="1 1 1"/>
-            <albedo_texture value="../../textures/09___Default_albedo.jpg"/>
-            <normal_texture value="../../textures/09___Default_normal.jpg"/>
+            <albedo_texture value="../../../assets/textures/japanese/13___Default_albedo.jpg"/>
+            <normal_texture value="../../../assets/textures/japanese/13___Default_normal.png"/>
         </material>
     </model>
 
     <model type="obj" name="model5">
-        <filename value="../../meshes/model5.obj"/>
+        <filename value="../../../assets/meshes/japanese/model5.obj"/>
 
         <material type="lambertian">
             <albedo value="1 1 1"/>
-            <albedo_texture value="../../textures/13___Default_albedo.jpg"/>
-            <normal_texture value="../../textures/13___Default_normal.jpg"/>
+            <albedo_texture value="../../../assets/textures/japanese/14___Default_albedo.jpg"/>
+            <normal_texture value="../../../assets/textures/japanese/14___Default_normal.png"/>
         </material>
     </model>
 
     <model type="obj" name="model6">
-        <filename value="../../meshes/model6.obj"/>
+        <filename value="../../../assets/meshes/japanese/model6.obj"/>
 
         <material type="lambertian">
             <albedo value="1 1 1"/>
-            <albedo_texture value="../../textures/14___Default_albedo.jpg"/>
-            <normal_texture value="../../textures/14___Default_normal.jpg"/>
+            <albedo_texture value="../../../assets/textures/japanese/15___Default_albedo.jpg"/>
+            <normal_texture value="../../../assets/textures/japanese/15___Default_normal.png"/>
         </material>
     </model>
 
     <model type="obj" name="model7">
-        <filename value="../../meshes/model7.obj"/>
+        <filename value="../../../assets/meshes/japanese/model7.obj"/>
 
         <material type="lambertian">
             <albedo value="1 1 1"/>
-            <albedo_texture value="../../textures/15___Default_albedo.jpg"/>
-            <normal_texture value="../../textures/15___Default_normal.jpg"/>
+            <albedo_texture value="../../../assets/textures/japanese/01___Default_albedo.jpg"/>
+            <normal_texture value="../../../assets/textures/japanese/01___Default_normal.png"/>
         </material>
     </model>
 
     <model type="obj" name="model8">
-        <filename value="../../meshes/model8.obj"/>
+        <filename value="../../../assets/meshes/japanese/model8.obj"/>
 
         <material type="lambertian">
             <albedo value="1 1 1"/>
-            <albedo_texture value="../../textures/19___Default_albedo.jpg"/>
+            <albedo_texture value="../../../assets/textures/japanese/20___Default_albedo.jpg"/>
+            <normal_texture value="../../../assets/textures/japanese/20___Default_normal.png"/>
         </material>
     </model>
 
     <model type="obj" name="model9">
-        <filename value="../../meshes/model9.obj"/>
+        <filename value="../../../assets/meshes/japanese/model9.obj"/>
 
         <material type="lambertian">
             <albedo value="1 1 1"/>
-            <albedo_texture value="../../textures/20___Default_albedo.jpg"/>
+            <albedo_texture value="../../../assets/textures/japanese/07___Default_albedo.jpg"/>
+            <normal_texture value="../../../assets/textures/japanese/07___Default_normal.png"/>
         </material>
     </model>
     

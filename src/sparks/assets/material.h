@@ -25,12 +25,12 @@ struct Material {
   int normal_texture_id{-1};
   float alpha{1.0f};
   MaterialType material_type{MATERIAL_TYPE_LAMBERTIAN};
-  float specular_transmission{0.0f};
-  float metallic{0.3f};
-  float subsurface{0.0f};
-  float specular{0.5f};
   float roughness{1.0f};
-  float specular_tint{0.5f};
+  float subsurface{0.0f};
+  float metallic{0.0f};
+  float specular{0.0f};
+  float specular_tint{0.0f};
+  float specular_transmission{0.0f};
   float anisotropic{0.0f};
   float sheen{0.0f};
   float sheen_tint{0.0f};

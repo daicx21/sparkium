@@ -10,12 +10,12 @@ struct Material {
   int normal_texture_id;
   float alpha;
   uint material_type;
-  float specular_transmission;
-  float metallic;
-  float subsurface;
-  float specular;
   float roughness;
+  float subsurface;
+  float metallic;
+  float specular;
   float specular_tint;
+  float specular_transmission;
   float anisotropic;
   float sheen;
   float sheen_tint;

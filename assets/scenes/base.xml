@@ -8,10 +8,10 @@
 		</transform>
 	</camera>
 
-	<envmap type="file" value="../../textures/envmap_clouds_4k.hdr"/>
+	<envmap type="file" value="../../../assets/textures/envmap_clouds_4k.hdr"/>
 
 	<model type="obj">
-		<filename value="../../meshes/plane.obj"/>
+		<filename value="../../../assets/meshes/plane.obj"/>
 
 		<material type="lambertian">
 			<albedo value="0.8 0.8 0.8"/>
@@ -26,7 +26,7 @@
 
 		<material type="lambertian">
 			<albedo value="1 1 1"/>
-			<albedo_texture value="../../textures/tex_u1_v1.jpg"/>
+			<albedo_texture value="../../../assets/textures/earth.jpg"/>
 		</material>
 	</model>
 

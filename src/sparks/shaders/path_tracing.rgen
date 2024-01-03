@@ -201,8 +201,8 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
     if (abs(dot(direction, hgn)) < eps) break;
     if (dot(hgn, direction_old) * dot(hgn, direction) > 0.0)
     {
-      if (inside_id == 0) inside_id = old_hit_entity_id;
-      else if (inside_id == old_hit_entity_id) inside_id = 0;
+      if (inside_id == old_hit_entity_id) inside_id = 0;
+      else inside_id = old_hit_entity_id;
     }
   }
   return radiance;
