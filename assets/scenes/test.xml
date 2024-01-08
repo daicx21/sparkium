@@ -125,15 +125,9 @@
 
 		<material type="principled">
 			<albedo value="0.8 0.67 0.16"/>
-            <anisotropic value="0.8"/>
-			<roughness value="0.1"/>
+			<roughness value="1.0"/>
             <subsurface value="0.0"/>
-            <metallic value="0.0"/>
             <specular value="1.0"/>
-            <specular_transmission value="0.0"/>
-            <clearcoat value="0.0"/>
-            <clearcoat_gloss value="0.0"/>
-            <sheen value="0.0"/>
 		</material>
 	</model>
 
