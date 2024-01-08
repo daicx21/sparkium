@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="utf-8"?>
+<scene>
+    <camera>
+        <transform type="lookat">
+            <eye value="278 273 -800"/>
+            <center value="278 273 0"/>
+            <up value="0.0 1.0 0.0"/>
+        </transform>
+        <fov value="40"/>
+        <speed value="100"/>
+    </camera>
+
+    <!--Light-->
+    <model name="Light">
+        <vertex position="343.0 548.7 227.0"/>
+        <vertex position="343.0 548.7 332.0"/>
+        <vertex position="213.0 548.7 332.0"/>
+        <vertex position="213.0 548.7 227.0"/>
+        <index value="0"/>
+        <index value="1"/>
+        <index value="3"/>
+        <index value="1"/>
+        <index value="3"/>
+        <index value="2"/>
+
+        <material type="emission">
+            <emission value="1.0 1.0 1.0"/>
+            <emission_strength value="50.0"/>
+        </material>
+    </model>
+
+    <model type="sphere">
+		<center value="0 0 0"/>
+		<radius value="50"/>
+
+		<transform type="translate" value="170.0 50.0 200.0"/>
+
+		<material type="principled">
+			<albedo value="0.2 0.8 0.8"/>
+            <anisotropic value="1.0"/>
+            <specular_transmission value="1.0"/>
+            <roughness value="0.3"/>
+		</material>
+    </model>
+
+    <model type="sphere">
+		<center value="0 0 0"/>
+		<radius value="50"/>
+
+		<transform type="translate" value="200.0 50.0 300.0"/>
+
+		<material type="principled">
+			<albedo value="0.8 0.8 0.2"/>
+            <specular_transmission value="1.0"/>
+            <roughness value="0.05"/>
+            <metallic value="0.0"/>
+		</material>
+    </model>
+
+    <model type="sphere">
+		<center value="0 0 0"/>
+		<radius value="50"/>
+
+		<transform type="translate" value="120.0 50.0 350.0"/>
+
+		<material type="principled">
+			<albedo value="0.8 0.2 0.8"/>
+            <specular_transmission value="1.0"/>
+            <roughness value="0.1"/>
+		</material>
+    </model>
+ 
+    <model type="sphere">
+		<center value="0 0 0"/>
+		<radius value="75"/>
+
+		<transform type="translate" value="0.0 180.0 400.0"/>
+
+		<material type="principled">
+			<albedo value="1 1 1"/>
+            <specular_transmission value="1.0"/>
+            <roughness value="0.2"/>
+            <metallic value="0.0"/>
+		</material>
+    </model>
+
+    <model type="obj" name="westdragon">
+        <filename value="../../../assets/meshes/west_dragon.obj"/>
+        <transform type="world">
+            <scale value="5 5 5"/>
+            <rotation value="0 120 0"/>
+            <translation value="100 350 331"/>
+        </transform>
+
+        <material type="lambertian">
+            <albedo value="1 1 1"/>
+            <albedo_texture value="../../../assets/textures/west_dragon.png"/>
+        </material>
+    </model>
+
+    <model type="obj" name="Bunny">
+        <filename value="../../../assets/meshes/bunny.obj"/>
+        <transform type="world">
+            <scale value="1000 1000 1000"/>
+            <translation value="300 -30 131"/>
+            <rotation value="-174 52 -180"/>
+        </transform>
+
+        <material type="principled">
+            <albedo value="0.8 0.8 0.2"/>
+            <specular_transmission value="0.0"/>
+            <roughness value="0.5"/>
+            <metallic value="0.0"/>
+            <clearcoat value="1.0"/>
+            <clearcoat_gloss value="1.0"/>
+        </material>
+    </model>
+
+    <model type="obj" name="EastDragon">
+        <filename value="../../../assets/meshes/east_dragon.obj"/>
+        <transform type="world">
+            <scale value="100 100 100"/>
+            <translation value="70 30 250"/>
+            <rotation value="0 -90 0"/>
+        </transform>
+
+        <material type="principled">
+            <albedo value="0.8 0.8 0.2"/>
+            <specular_transmission value="0.0"/>
+            <roughness value="0.5"/>
+            <metallic value="1.0"/>
+            <clearcoat value="1.0"/>
+            <clearcoat_gloss value="1.0"/>
+        </material>
+    </model>
+
+    <model type="obj" name="WoodTable">
+        <filename value="../../../assets/meshes/wood_table.obj"/>
+        <transform type="world">
+            <scale value="400 400 400"/>
+            <translation value="600 0 200"/>
+        </transform>
+
+        <material type="principled">
+            <albedo value="1.0 1.0 1.0"/>
+            <albedo_texture value="../../../assets/textures/wood_table.jpg"/>
+            <specular_transmission value="0.0"/>
+            <roughness value="1.0"/>
+            <metallic value="0.0"/>
+            <clearcoat value="1.0"/>
+            <clearcoat_gloss value="0.0"/>
+        </material>
+    </model>
+
+    <model type="obj" name="WoodTableGlass">
+        <filename value="../../../assets/meshes/wood_table_glass.obj"/>
+        <transform type="world">
+            <scale value="400 400 400"/>
+            <translation value="600 0 200"/>
+        </transform>
+
+        <material type="transmissive">
+            <albedo value="1.0 1.0 1.0"/>
+            <specular_transmission value="0.0"/>
+            <roughness value="0.5"/>
+            <metallic value="0.0"/>
+            <clearcoat value="1.0"/>
+            <clearcoat_gloss value="1.0"/>
+        </material>
+    </model>
+
+    <model type="obj" name="TableFountain">
+        <filename value="../../../assets/meshes/table_fountain.obj"/>
+        <transform type="world">
+            <scale value="500 500 500"/>
+            <translation value="600 186 200"/>
+        </transform>
+
+        <material type="principled">
+            <albedo value="1.0 1.0 1.0"/>
+            <albedo_texture value="../../../assets/textures/table_fountain.jpeg"/>
+            <normal_texture value="../../../assets/textures/table_fountain_normal.jpeg"/>
+            <specular_transmission value="0.0"/>
+            <roughness value="0.5"/>
+            <metallic value="1.0"/>
+            <clearcoat value="0.0"/>
+            <clearcoat_gloss value="0.0"/>
+        </material>
+    </model>
+
+    <model type="obj" name="Plant">
+        <filename value="../../../assets/meshes/plant.obj"/>
+        <transform type="world">
+            <scale value="40 40 40"/>
+            <translation value="-100 0 100"/>
+        </transform>
+
+        <material type="principled">
+            <albedo value="1.0 1.0 1.0"/>
+            <albedo_texture value="../../../assets/textures/plant.jpg"/>
+            <normal_texture value="../../../assets/textures/plant_normal.jpg"/>
+            <specular_transmission value="0.0"/>
+            <roughness value="0.0"/>
+            <subsurface value="1.0"/>
+            <metallic value="0.0"/>
+            <clearcoat value="1.0"/>
+            <clearcoat_gloss value="1.0"/>
+            <sheen value="1.0"/>
+            <sheen_tint value="1.0"/>
+        </material>
+    </model>
+
+    <!--ceiling-->
+    <model name="Ceiling">
+        <vertex position="556.0 548.8 0.0  "/>
+        <vertex position="556.0 548.8 559.2"/>
+        <vertex position="0.0 548.8 559.2"/>
+        <vertex position="0.0 548.8   0.0"/>
+        <index value="0"/>
+        <index value="1"/>
+        <index value="3"/>
+        <index value="1"/>
+        <index value="3"/>
+        <index value="2"/>
+
+        <transform type="world">
+            <scale value="2 1 1"/>
+            <translation value="-200 0 0"/>
+        </transform>
+
+        <material type="lambertian">
+            <albedo value="0.8 0.8 0.8"/>
+        </material>
+    </model>
+
+    <model type="obj" name="Floor">
+        <filename value="../../../assets/meshes/cornell/floor.obj"/>
+
+        <transform type="world">
+            <scale value="2 1 1"/>
+            <translation value="-200 0 0"/>
+        </transform>
+
+        <material type="lambertian">
+            <albedo value="1 1 1"/>
+            <albedo_texture value="../../../assets/textures/wood.png"/>
+            <normal_texture value="../../../assets/textures/wood_normal.png"/>
+        </material>
+    </model>
+
+    <model type="obj" name="Backwall">
+        <filename value="../../../assets/meshes/cornell/backwall.obj"/>
+
+        <transform type="world">
+            <scale value="2 1 1"/>
+            <translation value="-200 0 0"/>
+        </transform>
+
+        <material type="lambertian">
+            <albedo value="1 1 1"/>
+            <albedo_texture value="../../../assets/textures/brick_2.jpg"/>
+            <normal_texture value="../../../assets/textures/brick_2_normal.jpg"/>
+        </material>
+    </model>
+
+    <model type="obj" name="Rightwall">
+        <filename value="../../../assets/meshes/cornell/rightwall.obj"/>
+
+        <transform type="world">
+            <translation value="-200 0 0"/>
+        </transform>
+
+        <material type="lambertian">
+            <albedo value="1 1 1"/>
+            <albedo_texture value="../../../assets/textures/brick_3.png"/>
+            <normal_texture value="../../../assets/textures/brick_3_normal.png"/>
+        </material>
+    </model>
+
+    <model type="obj" name="Leftwall">
+        <filename value="../../../assets/meshes/cornell/leftwall.obj"/>
+
+        <transform type="world">
+            <translation value="200 0 0"/>
+        </transform>
+
+        <material type="lambertian">
+            <albedo value="1 1 1"/>
+            <albedo_texture value="../../../assets/textures/brick_3.png"/>
+            <normal_texture value="../../../assets/textures/brick_3_normal.png"/>
+        </material>
+    </model>
+
+</scene>
