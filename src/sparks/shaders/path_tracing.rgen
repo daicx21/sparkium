@@ -68,13 +68,15 @@ void TraceRay(vec3 origin, vec3 direction) {
   hit_record = GetHitRecord(ray_payload, origin, direction);
 }
 
+int id1;
 vec3 hhh;
 float area_emission;
 
 void sample_light() {
   int tot = lightsources[0];
   int id = int(fract(RandomFloat()) * tot) + 1;
-  int id1 = lightsources[id * 2 - 1], cnt = lightsources[id * 2];
+  id1 = lightsources[id * 2 - 1];
+  int cnt = lightsources[id * 2];
   int id2 = int(fract(RandomFloat()) * cnt);
 
   ObjectInfo info = object_infos[id1];
@@ -95,7 +97,7 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
   vec3 radiance = vec3(0.0);
   vec3 throughput = vec3(1.0);
 
-  float RR_P = 0.9f;
+  float RR_P = 0.95f;
   bool medium = false;
 
   for (int b = 0; b < guo.num_bounces; b++) {
@@ -112,7 +114,7 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
 
     pre_gao(material, hit_record.normal, hit_record.geometry_normal, hit_record.tangent);
 
-    int old_hit_entity_id = hit_record.hit_entity_id;
+    int hit_entity_id = hit_record.hit_entity_id;
     vec3 hp = hit_record.position, hn = hit_record.normal, hgn = hit_record.geometry_normal, direction_old = direction;
 
     if (mat.material_type == MATERIAL_TYPE_EMISSION) {
@@ -125,13 +127,13 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
         float sigma_a = mat.volume_parameter.x, sigma_s = mat.volume_parameter.y;
         float sigma_maj = sigma_a + sigma_s;
         float dist = -log(max(1.0 - RandomFloat(), eps)) / sigma_maj;
-        if (dist >= length(hp - origin)) {
+        if (dist >= ray_payload.t) {
           origin = hp;
           medium = false;
           continue;
         }
         else if (RandomFloat() <= sigma_a / sigma_maj) {
-          radiance += throughput * mat.emission * mat.emission_strength;
+          radiance += throughput * mat.emission * mat.volume_parameter.z;
           break;
         }
         else {
@@ -176,7 +178,7 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       vec3 dir = normalize(hhh - hp);
       TraceRay(hp, dir);
       float cosine = abs(dot(hit_record.normal, dir)), pdf1, pdf2;
-      if (cosine > eps && ray_payload.t != -1.0f && materials[hit_record.hit_entity_id].material_type == MATERIAL_TYPE_EMISSION) {
+      if (cosine > eps && ray_payload.t != -1.0f && hit_record.hit_entity_id == id1) {
         pdf1 = ray_payload.t * ray_payload.t / cosine / area_emission;
         pdf2 = pdf(direction, dir);
         if (pdf1 != 0.0f || pdf2 != 0.0f)
@@ -204,8 +206,8 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
     if (abs(dot(direction, hgn)) < eps) break;
     if (dot(hgn, direction_old) * dot(hgn, direction) > 0.0)
     {
-      if (inside_id == old_hit_entity_id) inside_id = 0;
-      else inside_id = old_hit_entity_id;
+      if (inside_id == hit_entity_id) inside_id = -1;
+      else inside_id = hit_entity_id;
     }
   }
   return radiance;
@@ -230,6 +232,7 @@ void main() {
     target = vec3(camera_to_world * vec4(target, 1.0));
     vec3 direction = normalize(target - origin);
 
+    inside_id = -1;
     total_radiance += clamp(SampleRay(origin, direction), 0.0, guo.clamp);
   }
 

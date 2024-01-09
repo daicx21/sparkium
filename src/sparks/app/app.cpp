@@ -666,7 +666,7 @@ void App::UpdateDynamicBuffer() {
           30.0f, 10000.0f);
   global_uniform_buffer_far_->operator[](0) = global_uniform_object;
   auto &entities = renderer_->GetScene().GetEntities();
-  int tot=0;
+  int tot = 0;
   for (int i = 0; i < entities.size(); i++) {
     auto &entity = entities[i];
     entity_uniform_buffer_->operator[](i).model = entity.GetTransformMatrix();

@@ -48,7 +48,7 @@ HitRecord GetHitRecord(RayPayload ray_payload, vec3 origin, vec3 direction) {
       - dot(hit_record.tangent, hit_record.normal) * hit_record.normal);
 
   if (dot(direction, hit_record.geometry_normal) > 0.0) hit_record.geometry_normal = -hit_record.geometry_normal;
-  if (hit_record.hit_entity_id == inside_id && inside_id != 0) hit_record.geometry_normal = -hit_record.geometry_normal;
+  if (hit_record.hit_entity_id == inside_id && inside_id != -1) hit_record.geometry_normal = -hit_record.geometry_normal;
   if (dot(direction, hit_record.geometry_normal) * dot(direction, hit_record.normal) < 0.0) hit_record.normal = -hit_record.normal;
   
   if (!(abs(dot(hit_record.tangent, hit_record.tangent) - 1) < eps && abs(dot(hit_record.tangent, hit_record.normal)) < eps))
