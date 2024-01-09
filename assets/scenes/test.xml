@@ -125,8 +125,7 @@
 
 		<material type="principled">
 			<albedo value="0.8 0.67 0.16"/>
-			<roughness value="1.0"/>
-            <subsurface value="0.0"/>
+			<roughness value="0.0"/>
             <specular value="1.0"/>
 		</material>
 	</model>

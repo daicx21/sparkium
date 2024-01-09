@@ -7,8 +7,6 @@ struct HitRecord {
   vec3 geometry_normal;
   vec3 tangent;
   vec2 tex_coord;
-  vec3 base_color;
-  uint material_type;
 };
 
 int inside_id;
@@ -68,9 +66,6 @@ HitRecord GetHitRecord(RayPayload ray_payload, vec3 origin, vec3 direction) {
         (2.0f * vec3(texture(texture_samplers[mat.normal_texture_id], hit_record.tex_coord)) - vec3(1.0f)));
     hit_record.tangent = normalize(hit_record.tangent - dot(hit_record.tangent, hit_record.normal) * hit_record.normal);
   }
-
-  hit_record.base_color = mat.albedo_color * texture(texture_samplers[mat.albedo_texture_id], hit_record.tex_coord).xyz;
-  hit_record.material_type = mat.material_type;
 
   return hit_record;
 }

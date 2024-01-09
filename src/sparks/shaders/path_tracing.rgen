@@ -68,13 +68,34 @@ void TraceRay(vec3 origin, vec3 direction) {
   hit_record = GetHitRecord(ray_payload, origin, direction);
 }
 
+vec3 hhh;
+float area_emission;
+
+void sample_light() {
+  int tot = lightsources[0];
+  int id = int(fract(RandomFloat()) * tot) + 1;
+  int id1 = lightsources[id * 2 - 1], cnt = lightsources[id * 2];
+  int id2 = int(fract(RandomFloat()) * cnt);
+
+  ObjectInfo info = object_infos[id1];
+      
+  Vertex p1 = GetVertex(info.vertex_offset + indices[info.index_offset + id2 * 3]),
+         p2 = GetVertex(info.vertex_offset + indices[info.index_offset + id2 * 3 + 1]),
+         p3 = GetVertex(info.vertex_offset + indices[info.index_offset + id2 * 3 + 2]);
+      
+  float h1 = fract(RandomFloat()), h2 = fract(RandomFloat()), h3;
+  if (h1 + h2 > 1.0f) h1 = 1.0f - h1, h2 = 1.0f - h2;
+  h3 = 1.0f - h1 - h2;
+        
+  hhh = h1 * p1.position + h2 * p2.position + h3 * p3.position;
+  area_emission = length(cross(p2.position - p1.position, p3.position - p1.position)) * 0.5f * tot * cnt;
+}
+
 vec3 SampleRay(vec3 origin, vec3 direction) {
   vec3 radiance = vec3(0.0);
   vec3 throughput = vec3(1.0);
 
-  float RR_P = 0.9f, area_emission = 0.0f;
-
-  int tot = lightsources[0];
+  float RR_P = 0.9f;
   bool medium = false;
 
   for (int b = 0; b < guo.num_bounces; b++) {
@@ -87,64 +108,53 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
     if (abs(dot(hit_record.geometry_normal, direction)) < eps) break;
 
     Material material = materials[hit_record.hit_entity_id];
-    material.albedo_color = hit_record.base_color;
+    material.albedo_color *= texture(texture_samplers[material.albedo_texture_id], hit_record.tex_coord).xyz;
 
     pre_gao(material, hit_record.normal, hit_record.geometry_normal, hit_record.tangent);
 
     int old_hit_entity_id = hit_record.hit_entity_id;
-    vec3 hn = hit_record.normal, hp = hit_record.position, hgn = hit_record.geometry_normal, direction_old = direction;
-    vec2 ht = hit_record.tex_coord;
+    vec3 hp = hit_record.position, hn = hit_record.normal, hgn = hit_record.geometry_normal, direction_old = direction;
 
-    if (material.material_type == MATERIAL_TYPE_EMISSION) {
-      radiance += throughput * material.emission * material.emission_strength;
+    if (mat.material_type == MATERIAL_TYPE_EMISSION) {
+      radiance += throughput * mat.emission * mat.emission_strength;
       break;
     }
 
-    if (material.material_type != MATERIAL_TYPE_SPECULAR && material.material_type != MATERIAL_TYPE_TRANSMISSIVE 
-        && material.material_type != MATERIAL_TYPE_MEDIA && tot != 0)
-    {
-      int id = int(fract(RandomFloat()) * tot) + 1;
-      int id1 = lightsources[id * 2 - 1], cnt = lightsources[id * 2];
-      int id2 = int(fract(RandomFloat()) * cnt);
-
-      ObjectInfo info = object_infos[id1];
-      
-      Vertex p1 = GetVertex(info.vertex_offset + indices[info.index_offset + id2 * 3]),
-             p2 = GetVertex(info.vertex_offset + indices[info.index_offset + id2 * 3 + 1]),
-             p3 = GetVertex(info.vertex_offset + indices[info.index_offset + id2 * 3 + 2]);
-      
-      float h1 = fract(RandomFloat()), h2 = fract(RandomFloat()), h3;
-      if (h1 + h2 > 1.0f) h1 = 1.0f - h1, h2 = 1.0f - h2;
-      h3 = 1.0f - h1 - h2;
-        
-      vec3 hhh = h1 * p1.position + h2 * p2.position + h3 * p3.position, dir = normalize(hhh - hp);
-      area_emission = length(cross(p2.position - p1.position, p3.position - p1.position)) * 0.5f * tot * cnt;
-      float cosine = dot(dir, hn);
-      
-      TraceRay(hp, dir);
-      if (!(cosine <= 0.0f || ray_payload.t == -1.0f || materials[hit_record.hit_entity_id].material_type != MATERIAL_TYPE_EMISSION))
-      {
-        if (dot(hit_record.normal, dir) > 0.0f) hit_record.normal *= -1.0f;
-        hit_record.normal = normalize(hit_record.normal);
-        float pdf1 = dot(hhh - hp, hhh - hp) / cosine / area_emission, pdf2 = pdf(direction, dir);
-        if (pdf1 != 0.0f || pdf2 != 0.0f)
-          radiance += throughput * materials[hit_record.hit_entity_id].emission * materials[hit_record.hit_entity_id].emission_strength *
-                      bsdf(direction, dir) * pdf1 * pdf1 / (pdf1 * pdf1 + pdf2 * pdf2) *
-                      (-dot(hit_record.normal, dir)) / dot(hhh - hp, hhh - hp) * area_emission;
+    if (mat.material_type == MATERIAL_TYPE_MEDIA) {
+      if (medium) {
+        float sigma_a = mat.volume_parameter.x, sigma_s = mat.volume_parameter.y;
+        float sigma_maj = sigma_a + sigma_s;
+        float dist = -log(max(1.0 - RandomFloat(), eps)) / sigma_maj;
+        if (dist >= length(hp - origin)) {
+          origin = hp;
+          medium = false;
+          continue;
+        }
+        else if (RandomFloat() <= sigma_a / sigma_maj) {
+          radiance += throughput * mat.emission * mat.emission_strength;
+          break;
+        }
+        else {
+          origin += dist * direction;
+          direction = sample_bsdf(direction);
+        }
+      }
+      else {
+        origin = hp;
+        medium = true;
       }
     }
-
-    if (RandomFloat() > RR_P) break;
-    throughput /= RR_P;
-
-    if (material.material_type == MATERIAL_TYPE_SPECULAR) {
-      throughput *= hit_record.base_color;
+    else if (RandomFloat() > mat.alpha) {
+      origin = hp;
+    }
+    else if (mat.material_type == MATERIAL_TYPE_SPECULAR) {
+      throughput *= mat.albedo_color;
       direction -= 2.0f * dot(hn, direction) * hn;
       origin = hp;
     }
-    else if (material.material_type == MATERIAL_TYPE_TRANSMISSIVE) {
-      throughput *= hit_record.base_color;
-      float eta = material.eta;
+    else if (mat.material_type == MATERIAL_TYPE_TRANSMISSIVE) {
+      throughput *= mat.albedo_color;
+      float eta = mat.eta;
       float cos_t = dot(hn, direction), sin_t = sqrt(1.0f - cos_t * cos_t);
       vec3 dx = normalize(direction - dot(direction, hn) * hn), dy = hn;
       if (cos_t < 0.0f) dy = - dy, cos_t = -cos_t;
@@ -161,43 +171,36 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       if (fract(RandomFloat()) > fresnel) direction = cos_p * dy + sin_p * dx;
       else direction = direction - dot(direction, hn) * hn * 2.0f;
     }
-    else if (material.material_type == MATERIAL_TYPE_MEDIA) {
-      if (medium) {
-        float sigma_a = material.volume_parameter.x, sigma_s = material.volume_parameter.y;
-        float sigma_maj = sigma_a + sigma_s;
-        float dist = -log(max(1.0 - RandomFloat(), eps)) / sigma_maj;
-        if (dist >= length(hp - origin)) {
-          origin = hp;
-          medium = false;
-          continue;
-        }
-        else if (RandomFloat() <= sigma_a / sigma_maj) {
-          radiance += throughput * material.emission * material.emission_strength;
-          break;
-        }
-        else {
-          origin += dist * direction;
-          direction = sample_bsdf(direction);
-        }
-      }
-      else {
-        origin = hp;
-        medium = true;
-      }
-    }
     else {
-      vec3 dir = sample_bsdf(direction);
+      sample_light();
+      vec3 dir = normalize(hhh - hp);
       TraceRay(hp, dir);
-      float cosine = -dot(hit_record.normal, dir), pdf2 = pdf(direction, dir);
+      float cosine = abs(dot(hit_record.normal, dir)), pdf1, pdf2;
+      if (cosine > eps && ray_payload.t != -1.0f && materials[hit_record.hit_entity_id].material_type == MATERIAL_TYPE_EMISSION) {
+        pdf1 = ray_payload.t * ray_payload.t / cosine / area_emission;
+        pdf2 = pdf(direction, dir);
+        if (pdf1 != 0.0f || pdf2 != 0.0f)
+          radiance += throughput * materials[hit_record.hit_entity_id].emission * materials[hit_record.hit_entity_id].emission_strength *
+                      bsdf(direction, dir) * pdf1 / (pdf1 * pdf1 + pdf2 * pdf2);
+      }
+
+      if (RandomFloat() > RR_P) break;
+      throughput /= RR_P;
+
+      dir = sample_bsdf(direction);
+      TraceRay(hp, dir);
+      cosine = abs(dot(hit_record.normal, dir));
+      pdf2 = pdf(direction, dir);
       if (pdf2 <= 0.0) break;
       throughput *= bsdf(direction, dir) / pdf2;
-      if (cosine > 0.0f && ray_payload.t != -1.0f && materials[hit_record.hit_entity_id].material_type == MATERIAL_TYPE_EMISSION) {
-        float pdf1 = ray_payload.t * ray_payload.t / cosine / area_emission;
+      if (cosine > eps && ray_payload.t != -1.0f && materials[hit_record.hit_entity_id].material_type == MATERIAL_TYPE_EMISSION) {
+        pdf1 = ray_payload.t * ray_payload.t / cosine / area_emission;
         throughput *=  pdf2 * pdf2 / (pdf1 * pdf1 + pdf2 * pdf2);
       }
       origin = hp;
       direction = dir;
     }
+
     if (abs(dot(direction, hgn)) < eps) break;
     if (dot(hgn, direction_old) * dot(hgn, direction) > 0.0)
     {

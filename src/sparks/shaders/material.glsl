@@ -142,8 +142,8 @@ mat3 GenerateRotation(vec3 n) {
 }
 
 void pre_gao(Material material, vec3 N, vec3 NG, vec3 TG1) {
-  mat = material; n = N; ng = NG;
-  tg1 = TG1; tg2 = cross(n, tg1);
+  mat = material;
+  ng = NG; n = N; tg1 = TG1; tg2 = cross(n, tg1);
 }
 
 vec3 sample_visible_normals_aniso(vec3 wl) {
