@@ -42,6 +42,8 @@ layout(location = 0) rayPayloadEXT RayPayload ray_payload;
 #include "hit_record.glsl"
 // clang-format on
 
+Material base_mat;
+
 vec3 SampleEnvmap(vec3 direction) {
   float x = guo.envmap_offset;
   float y = acos(direction.y) * INV_PI;
@@ -93,12 +95,60 @@ void sample_light() {
   area_emission = length(cross(p2.position - p1.position, p3.position - p1.position)) * 0.5f * tot * cnt;
 }
 
+vec3 DirectLightTracing(vec3 origin, vec3 direction, int depth, Material cur_medium) {
+  sample_light();
+  vec3 dir = normalize(hhh - origin);
+  vec3 throughput = vec3(1.0);
+  if (cur_medium.material_type == MATERIAL_TYPE_MEDIA) {
+    throughput *= pdf(direction, dir);
+  }
+  else {
+    throughput *= bsdf(direction, dir);
+  }
+  float pdf2 = pdf(direction, dir);
+  vec3 hp = origin;
+  for (int b = depth; b < guo.num_bounces; b++) {
+    TraceRay(hp, dir);
+    if (ray_payload.t == 1.0f) {
+      return vec3(0.0);
+    }
+    Material material = materials[hit_record.hit_entity_id];
+    if (material.material_type == MATERIAL_TYPE_MEDIA) {
+      if (cur_medium.material_type == MATERIAL_TYPE_MEDIA) {
+        float sigma_a = mat.volume_parameter.x, sigma_s = mat.volume_parameter.y;
+        float sigma_maj = sigma_a + sigma_s;
+        throughput *= exp(-sigma_maj * ray_payload.t);
+        pdf2 *= exp(-sigma_maj * ray_payload.t);
+        cur_medium = base_mat;
+      }
+      else {
+        cur_medium = material;
+      }
+      hp = hit_record.position;
+      continue;
+    }
+    else if (hit_record.hit_entity_id == id1) {
+      float cosine = abs(dot(hit_record.normal, dir)), pdf1;
+      if (cosine > eps) {
+        pdf1 = dot(hhh - origin, hhh - origin) / cosine / area_emission;
+        if (pdf1 != 0.0f || pdf2 != 0.0f)
+          return throughput * material.emission * material.emission_strength *
+            pdf1 / (pdf1 * pdf1 + pdf2 * pdf2);
+      }
+    }
+    break;
+  }
+  return vec3(0.0);
+}
+
 vec3 SampleRay(vec3 origin, vec3 direction) {
   vec3 radiance = vec3(0.0);
   vec3 throughput = vec3(1.0);
 
-  float RR_P = 0.95f;
-  bool medium = false;
+  float RR_P = 0.95f, p_march = 1.0f;
+  Material cur_medium, medium_cache;
+  vec3 hp_cache, dir_cache;
+  bool is_cache_empty = true;
 
   for (int b = 0; b < guo.num_bounces; b++) {
     direction = normalize(direction);
@@ -117,33 +167,60 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
     int hit_entity_id = hit_record.hit_entity_id;
     vec3 hp = hit_record.position, hn = hit_record.normal, hgn = hit_record.geometry_normal, direction_old = direction;
 
+    bool is_scatter = false;
+
     if (mat.material_type == MATERIAL_TYPE_EMISSION) {
-      radiance += throughput * mat.emission * mat.emission_strength;
+      if (is_cache_empty) {
+        radiance += throughput * mat.emission * mat.emission_strength;
+      }
+      else {
+        mat = medium_cache;
+        float cosine = abs(dot(hit_record.normal, direction));
+        if (cosine > eps) {
+          float pdf1 = dot(hp - hp_cache, hp - hp_cache) / cosine / area_emission;
+          float pdf2 = pdf(dir_cache, direction) * p_march;
+          if (pdf1 != 0.0f || pdf2 != 0.0f) {
+            radiance += throughput * material.emission * material.emission_strength *
+              pdf2 * pdf2 / (pdf1 * pdf1 + pdf2 * pdf2);
+          }
+        }
+      }
       break;
     }
 
+    if (RandomFloat() > RR_P) break;
+    throughput /= RR_P;
+
     if (mat.material_type == MATERIAL_TYPE_MEDIA) {
-      if (medium) {
+      if (cur_medium.material_type == MATERIAL_TYPE_MEDIA) {
         float sigma_a = mat.volume_parameter.x, sigma_s = mat.volume_parameter.y;
         float sigma_maj = sigma_a + sigma_s;
         float dist = -log(max(1.0 - RandomFloat(), eps)) / sigma_maj;
         if (dist >= ray_payload.t) {
+          p_march *= exp(-sigma_maj * ray_payload.t);
           origin = hp;
-          medium = false;
+          cur_medium = base_mat;
           continue;
         }
-        else if (RandomFloat() <= sigma_a / sigma_maj) {
-          radiance += throughput * mat.emission * mat.volume_parameter.z;
-          break;
-        }
         else {
+          radiance += throughput * mat.emission * mat.volume_parameter.z * sigma_a / sigma_maj;
+          throughput *= sigma_s / sigma_maj;
+          radiance += throughput * DirectLightTracing(origin + dist * direction, direction, b, cur_medium);
+          
+          is_cache_empty = false;
+          medium_cache = mat;
+          hp_cache = origin + dist * direction;
+          dir_cache = direction;
+          p_march = 1.0f;
+
           origin += dist * direction;
           direction = sample_bsdf(direction);
+          is_scatter = true;
         }
       }
       else {
         origin = hp;
-        medium = true;
+        cur_medium = mat;
       }
     }
     else if (RandomFloat() > mat.alpha) {
@@ -153,6 +230,7 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       throughput *= mat.albedo_color;
       direction -= 2.0f * dot(hn, direction) * hn;
       origin = hp;
+      is_cache_empty = true;
     }
     else if (mat.material_type == MATERIAL_TYPE_TRANSMISSIVE) {
       throughput *= mat.albedo_color;
@@ -172,39 +250,28 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
       origin = hp;
       if (fract(RandomFloat()) > fresnel) direction = cos_p * dy + sin_p * dx;
       else direction = direction - dot(direction, hn) * hn * 2.0f;
+      is_cache_empty = true;
     }
     else {
-      sample_light();
-      vec3 dir = normalize(hhh - hp);
-      TraceRay(hp, dir);
-      float cosine = abs(dot(hit_record.normal, dir)), pdf1, pdf2;
-      if (cosine > eps && ray_payload.t != -1.0f && hit_record.hit_entity_id == id1) {
-        pdf1 = ray_payload.t * ray_payload.t / cosine / area_emission;
-        pdf2 = pdf(direction, dir);
-        if (pdf1 != 0.0f || pdf2 != 0.0f)
-          radiance += throughput * materials[hit_record.hit_entity_id].emission * materials[hit_record.hit_entity_id].emission_strength *
-                      bsdf(direction, dir) * pdf1 / (pdf1 * pdf1 + pdf2 * pdf2);
-      }
+      radiance += throughput * DirectLightTracing(hp, direction, b, cur_medium); 
 
-      if (RandomFloat() > RR_P) break;
-      throughput /= RR_P;
+      is_cache_empty = false;
+      medium_cache = mat;
+      hp_cache = hp;
+      dir_cache = direction;
+      p_march = 1.0f;
 
-      dir = sample_bsdf(direction);
+      vec3 dir = sample_bsdf(direction);
       TraceRay(hp, dir);
-      cosine = abs(dot(hit_record.normal, dir));
-      pdf2 = pdf(direction, dir);
+      float cosine = abs(dot(hit_record.normal, dir)), pdf2 = pdf(direction, dir);
       if (pdf2 <= 0.0) break;
       throughput *= bsdf(direction, dir) / pdf2;
-      if (cosine > eps && ray_payload.t != -1.0f && materials[hit_record.hit_entity_id].material_type == MATERIAL_TYPE_EMISSION) {
-        pdf1 = ray_payload.t * ray_payload.t / cosine / area_emission;
-        throughput *=  pdf2 * pdf2 / (pdf1 * pdf1 + pdf2 * pdf2);
-      }
       origin = hp;
       direction = dir;
     }
 
     if (abs(dot(direction, hgn)) < eps) break;
-    if (dot(hgn, direction_old) * dot(hgn, direction) > 0.0)
+    if (dot(hgn, direction_old) * dot(hgn, direction) > 0.0 && !is_scatter)
     {
       if (inside_id == hit_entity_id) inside_id = -1;
       else inside_id = hit_entity_id;

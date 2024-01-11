@@ -386,7 +386,7 @@ vec3 bsdf(vec3 in_direction, vec3 out_direction) {
       return bsdf_disney(in_direction, out_direction);
     }
     default: {
-      return vec3(0.5);
+      return vec3(1.0);
     }
   }
 }
