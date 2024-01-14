@@ -116,7 +116,7 @@ vec3 DirectLightTracing(vec3 origin, vec3 direction, int depth, Material cur_med
     Material material = materials[hit_record.hit_entity_id];
     if (material.material_type == MATERIAL_TYPE_MEDIA) {
       if (cur_medium.material_type == MATERIAL_TYPE_MEDIA) {
-        float sigma_a = mat.volume_parameter.x, sigma_s = mat.volume_parameter.y;
+        float sigma_a = material.volume_parameter.x, sigma_s = material.volume_parameter.y;
         float sigma_maj = sigma_a + sigma_s;
         throughput *= exp(-sigma_maj * ray_payload.t);
         pdf2 *= exp(-sigma_maj * ray_payload.t);
