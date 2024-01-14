@@ -200,7 +200,6 @@ vec3 SampleRay(vec3 origin, vec3 direction) {
           p_march *= exp(-sigma_maj * ray_payload.t);
           origin = hp;
           cur_medium = base_mat;
-          continue;
         }
         else {
           radiance += throughput * mat.emission * mat.emission_strength * sigma_a / sigma_maj;
