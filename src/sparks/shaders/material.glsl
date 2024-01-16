@@ -301,7 +301,7 @@ float pdf_disney() {
 float pdf_henyey_greenstein() {
   float g = mat.volume_parameter.z;
   float d = 1.0 + g * g + 2.0 * g * dot(win, wout);
-  return INV_PI / 4.0 * (1.0 - g * g) / (d * sqrt(max(0.0, d)));
+  return INV_PI / 4.0 * (1.0 - g * g) / (d * sqrt(max(0.0, d))) * dot(-win, wout);
 }
 
 float pdf(vec3 in_direction, vec3 out_direction) {
